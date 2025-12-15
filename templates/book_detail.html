@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="px-3 py-3">
+    <style>
+        /* Override generic .book-card img height on detail page */
+        .book-hero-img { height: auto !important; max-height: 520px; object-fit: cover; }
+        @media (min-width: 992px) { .book-hero-img { max-height: 720px; } }
+    </style>
+    <div class="card book-card border-0">
+        {% if book.cover_image %}
+        <img src="{{ book.cover_image.url }}" class="w-100 book-hero-img" alt="{{ book.title }}">
+        {% else %}
+        <img src="https://via.placeholder.com/600x700?text=Rasm+yo%27q" class="w-100 book-hero-img" alt="{{ book.title }}">
+        {% endif %}
+        <div class="p-3">
+            <h4 class="fw-bold mb-1">{{ book.title }}</h4>
+            <div class="text-muted mb-2">{{ book.author.name }}</div>
+            {% if book.book_format %}<div class="mb-1 small text-muted">Format: {{ book.get_book_format_display }}</div>{% endif %}
+            {% if book.pages %}<div class="mb-1 small text-muted">Sahifa: {{ book.pages }}</div>{% endif %}
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <div class="fw-bold fs-4 text-primary">{{ book.sale_price|intcomma }} so‘m</div>
+            </div>
+            {% if book.description %}
+            <p class="mt-2 mb-3">{{ book.description }}</p>
+            {% endif %}
+            <form method="post" action="{% url 'add_to_cart' book.id %}" class="d-flex align-items-center gap-3">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-2">
+                    <button class="qty-btn" type="button" onclick="changeQty(-1)">-</button>
+                    <input type="number" id="qty" name="quantity" class="form-control text-center" style="width:80px;" value="1" min="1">
+                    <button class="qty-btn" type="button" onclick="changeQty(1)">+</button>
+                </div>
+                <button class="btn btn-primary flex-grow-1" type="submit">Savatchaga qo‘shish</button>
+            </form>
+            <div class="mt-3 d-flex gap-2">
+                {% if in_favorites %}
+                <form method="post" action="{% url 'remove_favorite' book.id %}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Sevimlidan olib tashlash</button>
+                </form>
+                {% else %}
+                <form method="post" action="{% url 'add_favorite' book.id %}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">Sevimlilarga qo‘shish</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function changeQty(delta) {
+    const input = document.getElementById('qty');
+    let val = parseInt(input.value || '1', 10) + delta;
+    if (val < 1) val = 1;
+    input.value = val;
+}
+</script>
+{% endblock %}

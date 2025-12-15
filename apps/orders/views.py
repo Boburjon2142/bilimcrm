@@ -1,0 +1,91 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.views.decorators.http import require_POST
+from django.db import transaction
+
+from apps.catalog.models import Book
+from .cart import Cart
+from .forms import CheckoutForm
+from .models import DeliveryNotice, Order, OrderItem
+from .services.delivery import recalculate_delivery
+
+
+def cart_detail(request):
+    cart = Cart(request)
+    return render(request, "cart.html", {"cart_items": list(cart.items()), "cart_total": cart.total_price()})
+
+
+@require_POST
+def add_to_cart(request, book_id):
+    cart = Cart(request)
+    try:
+        quantity = int(request.POST.get("quantity", 1))
+    except (TypeError, ValueError):
+        quantity = 1
+    cart.add(book_id, quantity)
+    return redirect("cart_detail")
+
+
+@require_POST
+def remove_from_cart(request, book_id):
+    cart = Cart(request)
+    cart.remove(book_id)
+    return redirect("cart_detail")
+
+
+@require_POST
+def update_cart(request, book_id):
+    cart = Cart(request)
+    try:
+        quantity = int(request.POST.get("quantity", 1))
+    except (TypeError, ValueError):
+        quantity = 1
+    cart.update(book_id, quantity)
+    return redirect("cart_detail")
+
+
+def checkout(request):
+    cart = Cart(request)
+    cart_items = list(cart.items())
+    if not cart_items:
+        return redirect("cart_detail")
+
+    if request.method == "POST":
+        form = CheckoutForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                order = form.save(commit=False)
+                order.total_price = cart.total_price()
+                order = recalculate_delivery(order, save=False)
+                order.save()
+                for item in cart_items:
+                    OrderItem.objects.create(
+                        order=order,
+                        book=item["book"],
+                        quantity=item["quantity"],
+                        price=item["price"],
+                    )
+                cart.clear()
+                request.session["last_order_id"] = order.id
+            return redirect(reverse("order_confirmation"))
+    else:
+        form = CheckoutForm()
+
+    delivery_notices = DeliveryNotice.objects.filter(is_active=True).order_by("-updated_at")[:5]
+
+    return render(
+        request,
+        "checkout.html",
+        {
+            "form": form,
+            "cart_items": cart_items,
+            "cart_total": cart.total_price(),
+            "delivery_notices": delivery_notices,
+        },
+    )
+
+
+def order_confirmation(request):
+    order_id = request.session.get("last_order_id")
+    order = Order.objects.filter(id=order_id).first()
+    return render(request, "order_confirmation.html", {"order": order})

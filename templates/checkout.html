@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="px-3 py-3">
+    <h4 class="fw-bold mb-3">Buyurtma</h4>
+    <form method="post" class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 16px;">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2">
+            {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="mb-3">
+            <label class="form-label">To‘liq ism sharif</label>
+            {{ form.full_name }}
+            {% if form.full_name.errors %}<div class="text-danger small">{{ form.full_name.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label">Telefon</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}<div class="text-danger small">{{ form.phone.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">Qo‘shimcha telefon</label>
+                {{ form.extra_phone }}
+                {% if form.extra_phone.errors %}<div class="text-danger small">{{ form.extra_phone.errors|striptags }}</div>{% endif %}
+            </div>
+        </div>
+        <div class="mt-3">
+            <label class="form-label">Lokatsiya (ixtiyoriy)</label>
+            {{ form.location }}
+            {% if form.location.errors %}<div class="text-danger small">{{ form.location.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="mt-3">
+            <label class="form-label">Manzil</label>
+            {{ form.address }}
+            {% if form.address.errors %}<div class="text-danger small">{{ form.address.errors|striptags }}</div>{% endif %}
+        </div>
+        {% if delivery_notices %}
+        <div class="mt-3">
+            <div class="alert alert-info mb-0">
+                <div class="fw-semibold mb-2">Yetkazib berish narx/vaqt ma'lumoti</div>
+                <ul class="mb-0 ps-3">
+                    {% for notice in delivery_notices %}
+                    <li class="mb-1">
+                        <strong>{{ notice.title }}:</strong>
+                        <span class="text-dark">{{ notice.body }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+        {{ form.latitude }}{{ form.longitude }}
+        <div id="manual-coords" class="row g-3" style="display:none;">
+            <div class="col-12 col-md-6">
+                <label class="form-label">Kenglik (lat) qo‘lda</label>
+                <input type="text" class="form-control" id="manual-lat" placeholder="41.2995">
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">Uzunlik (lng) qo‘lda</label>
+                <input type="text" class="form-control" id="manual-lng" placeholder="69.2401">
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-0">Lokatsiyani xaritada belgilang (ixtiyoriy)</label>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="open-google-maps">Google Maps’da ochish</button>
+            </div>
+            <div id="order-map" style="height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative;"></div>
+            <small class="text-muted d-block mt-1">Xaritaga bosib nuqta tanlang — koordinata va Google Maps havolasi avtomatik to‘ldiriladi.</small>
+            <div class="text-danger small" id="map-error" style="display:none;"></div>
+        </div>
+        <div class="mt-3">
+            <label class="form-label">Google Maps havolasi (ixtiyoriy)</label>
+            {{ form.maps_link }}
+            <small class="text-muted d-block">Havola avtomatik yoziladi, istasangiz o‘zingizning sharing linkni qo‘ying.</small>
+        </div>
+        <div class="mt-3">
+            <label class="form-label">Izoh</label>
+            {{ form.note }}
+            {% if form.note.errors %}<div class="text-danger small">{{ form.note.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="mt-3">
+            <label class="form-label d-block">To‘lov turi</label>
+            {{ form.payment_type }}
+            {% if form.payment_type.errors %}<div class="text-danger small">{{ form.payment_type.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="checkout-submit mt-3 p-2">
+            <button class="btn btn-primary w-100" type="submit">Buyurtma berish</button>
+        </div>
+    </form>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+        <div class="card-body">
+            <h6 class="fw-bold mb-2">Buyurtma yig‘indisi</h6>
+            <div class="d-flex flex-column gap-2">
+                {% for item in cart_items %}
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="fw-semibold" style="font-size: 14px;">{{ item.book.title }}</div>
+                        <small class="text-muted">x{{ item.quantity }}</small>
+                    </div>
+                    <span>{{ item.line_total|intcomma }} so‘m</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="fw-semibold">Umumiy</span>
+                <span class="fw-bold">{{ cart_total|intcomma }} so‘m</span>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// Interactive map (Leaflet). If Leaflet/tile fails, static clickable fallback + qo'lda kiritish.
+document.addEventListener("DOMContentLoaded", function () {
+    const latInput = document.getElementById("id_latitude");
+    const lngInput = document.getElementById("id_longitude");
+    const mapError = document.getElementById("map-error");
+    const mapBox = document.getElementById("order-map");
+    const manual = document.getElementById("manual-coords");
+    const manualLat = document.getElementById("manual-lat");
+    const manualLng = document.getElementById("manual-lng");
+    const mapsInput = document.getElementById("id_maps_link");
+    const openMapsBtn = document.getElementById("open-google-maps");
+    if (!latInput || !lngInput || !mapBox) return;
+
+    let centerLat = parseFloat(latInput.value) || 41.2995;
+    let centerLng = parseFloat(lngInput.value) || 69.2401;
+    const zoom = 13;
+
+    function setMapsLinkFromCoords() {
+        if (!mapsInput) return;
+        if (latInput.value && lngInput.value) {
+            const url = `https://www.google.com/maps?q=${latInput.value},${lngInput.value}`;
+            mapsInput.value = url;
+        }
+    }
+
+    // Leaflet attempt
+    (function initLeaflet() {
+        const leafletCss = document.createElement("link");
+        leafletCss.rel = "stylesheet";
+        leafletCss.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        leafletCss.crossOrigin = "";
+        document.head.appendChild(leafletCss);
+
+        const leafletJs = document.createElement("script");
+        leafletJs.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        leafletJs.crossOrigin = "";
+        leafletJs.onload = buildLeafletMap;
+        leafletJs.onerror = buildStaticFallback;
+        document.head.appendChild(leafletJs);
+    })();
+
+    function buildLeafletMap() {
+        if (typeof L === "undefined") return buildStaticFallback();
+        try {
+            const map = L.map("order-map").setView([centerLat, centerLng], zoom);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "&copy; OpenStreetMap",
+            }).addTo(map);
+            let marker = null;
+            if (latInput.value && lngInput.value) {
+                marker = L.marker([centerLat, centerLng]).addTo(map);
+            }
+            map.on("click", function (e) {
+                const { lat, lng } = e.latlng;
+                latInput.value = lat.toFixed(6);
+                lngInput.value = lng.toFixed(6);
+                centerLat = lat;
+                centerLng = lng;
+                if (marker) marker.setLatLng([lat, lng]);
+                else marker = L.marker([lat, lng]).addTo(map);
+                if (mapError) mapError.style.display = "none";
+                setMapsLinkFromCoords();
+            });
+        } catch (err) {
+            buildStaticFallback();
+        }
+    }
+
+    function buildStaticFallback() {
+        const mapContainer = mapBox;
+        mapContainer.innerHTML = "";
+        const img = document.createElement("img");
+        img.alt = "Xarita";
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "cover";
+        img.referrerPolicy = "no-referrer";
+        img.src = `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=${zoom}&size=900x450&markers=${centerLat},${centerLng},red-pushpin`;
+        mapContainer.appendChild(img);
+
+        const tileSize = 256;
+        const scale = () => tileSize * Math.pow(2, zoom);
+        const lonToX = (lon) => ((lon + 180) / 360) * scale();
+        const latToY = (lat) => {
+            const rad = (lat * Math.PI) / 180;
+            return ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * scale();
+        };
+        const xyToLatLng = (x, y) => {
+            const n = Math.PI - (2 * Math.PI * y) / scale();
+            const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+            const lng = (x / scale()) * 360 - 180;
+            return { lat, lng };
+        };
+
+        mapContainer.addEventListener("click", function (e) {
+            const rect = img.getBoundingClientRect();
+            const dx = e.clientX - rect.left - rect.width / 2;
+            const dy = e.clientY - rect.top - rect.height / 2;
+            const scaleFactorX = (img.naturalWidth || rect.width) / rect.width;
+            const scaleFactorY = (img.naturalHeight || rect.height) / rect.height;
+            const centerX = lonToX(centerLng);
+            const centerY = latToY(centerLat);
+            const worldX = centerX + dx * scaleFactorX;
+            const worldY = centerY + dy * scaleFactorY;
+            const { lat, lng } = xyToLatLng(worldX, worldY);
+            latInput.value = lat.toFixed(6);
+            lngInput.value = lng.toFixed(6);
+            centerLat = lat;
+            centerLng = lng;
+            img.src = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat.toFixed(6)},${lng.toFixed(6)}&zoom=${zoom}&size=900x450&markers=${lat.toFixed(6)},${lng.toFixed(6)},red-pushpin`;
+            if (mapError) mapError.style.display = "none";
+            setMapsLinkFromCoords();
+        });
+    }
+
+    if (manualLat && manualLng) {
+        const syncManual = () => {
+            const latVal = parseFloat(manualLat.value);
+            const lngVal = parseFloat(manualLng.value);
+            if (isNaN(latVal) || isNaN(lngVal)) return;
+            latInput.value = latVal.toFixed(6);
+            lngInput.value = lngVal.toFixed(6);
+            centerLat = latVal;
+            centerLng = lngVal;
+            setMarker(centerLat, centerLng);
+            if (map) map.setView([centerLat, centerLng], 13);
+            if (mapError) mapError.style.display = "none";
+            setMapsLinkFromCoords();
+        };
+        manualLat.addEventListener("change", syncManual);
+        manualLng.addEventListener("change", syncManual);
+    }
+
+    if (openMapsBtn) {
+        openMapsBtn.addEventListener("click", () => {
+            const url = mapsInput && mapsInput.value ? mapsInput.value : (latInput.value && lngInput.value
+                ? `https://www.google.com/maps?q=${latInput.value},${lngInput.value}`
+                : "https://www.google.com/maps");
+            window.open(url, "_blank", "noopener");
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}BILIM.UZ admin{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    :root {
+        --admin-accent: #111827;
+        --admin-accent-2: #2563eb;
+    }
+    #header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e5e7eb;
+        color: var(--admin-accent);
+    }
+    #header a:link, #header a:visited {
+        color: var(--admin-accent);
+        font-weight: 700;
+        letter-spacing: -0.3px;
+    }
+    #branding h1 {
+        font-size: 20px;
+        margin: 0;
+    }
+    .module h2, .app-auth .module caption, .app-catalog .module caption, .app-orders .module caption {
+        background: var(--admin-accent);
+        color: #fff;
+    }
+    .button.default, input[type=submit].default {
+        background: var(--admin-accent-2);
+    }
+    /* Remove Django branding/footer */
+    #footer, .django-version, .branding, .login #header h1 {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block branding %}
+<div id="branding">
+    <h1><a href="{% url 'admin:index' %}">BILIM.UZ admin</a></h1>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block footer %}{% endblock %}

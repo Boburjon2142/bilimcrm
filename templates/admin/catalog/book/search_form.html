@@ -1,0 +1,31 @@
+{% load i18n admin_urls %}
+{% if cl.search_fields %}
+<form id="changelist-search" method="get">
+    <div>
+        <label for="searchbar">
+            <span class="visually-hidden">{% translate 'Search' %}</span>
+        </label>
+        <input type="text" size="40" name="{{ search_var }}" value="{{ cl.query|default_if_none:''|escape }}"
+               id="searchbar" autofocus>
+        <input type="submit" value="{% translate 'Search' %}">
+        <button type="button" class="button" onclick="window.location.href='{% url cl.opts|admin_urlname:'changelist' %}'">
+            {% translate "Reload" %}
+        </button>
+        {% if show_result_count %}
+        <span class="small quiet">
+            {% blocktranslate count cl.result_count as count %}{{ count }} result{% plural %}{{ count }} results{% endblocktranslate %}
+            {% if show_full_result_count %}
+                ({% blocktranslate count cl.full_result_count as full_count %}{{ full_count }} total{% plural %}{{ full_count }} total{% endblocktranslate %})
+            {% endif %}
+        </span>
+        {% endif %}
+        {% if cl.params %}
+            {% for key, value in cl.params.items %}
+                {% if key != search_var %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+</form>
+{% endif %}

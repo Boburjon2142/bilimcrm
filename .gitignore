@@ -1,0 +1,28 @@
+# Virtualenv
+venv/
+.env
+.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Local DB
+*.sqlite3
+db.sqlite3
+
+# Django static/media output
+staticfiles/
+media/
+
+# IDE / OS junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Env files
+*.env

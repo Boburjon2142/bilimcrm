@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="px-3 py-3">
+<div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+            <div class="section-title">{{ category.name }}</div>
+            <small class="text-muted">Ushbu kategoriyadagi kitoblar</small>
+        </div>
+        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" type="button"
+                data-bs-toggle="collapse" data-bs-target="#categoryFilters"
+                aria-expanded="{% if current_author or current_sort %}true{% else %}false{% endif %}"
+                aria-controls="categoryFilters">
+            <i class="bi bi-funnel"></i>
+            <span>Filtr</span>
+        </button>
+    </div>
+
+    <div class="collapse {% if current_author or current_sort %}show{% endif %}" id="categoryFilters">
+        <div class="card border-0 shadow-sm mb-3" style="border-radius: 14px;">
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Muallif</label>
+                        <select name="author" class="form-select" onchange="this.form.submit()">
+                            <option value="">Barchasi</option>
+                            {% for author in authors %}
+                            <option value="{{ author.id }}" {% if author.id|stringformat:'s' == current_author %}selected{% endif %}>
+                                {{ author.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Saralash</label>
+                        <select name="sort" class="form-select" onchange="this.form.submit()">
+                            <option value="">Standart</option>
+                            <option value="price_asc" {% if current_sort == "price_asc" %}selected{% endif %}>Narx: arzon - qimmat</option>
+                            <option value="price_desc" {% if current_sort == "price_desc" %}selected{% endif %}>Narx: qimmat - arzon</option>
+                            <option value="newest" {% if current_sort == "newest" %}selected{% endif %}>Eng yangi</option>
+                            <option value="oldest" {% if current_sort == "oldest" %}selected{% endif %}>Eng eski</option>
+                            <option value="popular" {% if current_sort == "popular" %}selected{% endif %}>Ko‘p ko‘rilgan</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% if child_categories %}
+<div class="mb-3">
+    <div class="d-flex gap-2 flex-wrap">
+        {% for child in child_categories %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'category_detail' child.slug %}">{{ child.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    {% for book in books %}
+    <div class="col-6 col-md-3">
+        <div class="card book-card h-100">
+            {% if book.cover_image %}
+                <img src="{{ book.cover_image.url }}" class="card-img-top" alt="{{ book.title }}">
+                {% else %}
+                <img src="https://via.placeholder.com/300x400?text=Rasm+yo%27q" class="card-img-top" alt="{{ book.title }}">
+                {% endif %}
+                <div class="p-2">
+                    <div class="fw-semibold" style="font-size: 14px; line-height: 1.2;">{{ book.title }}</div>
+                    <div class="text-muted" style="font-size: 12px;">{{ book.author.name }}</div>
+                    <div class="fw-bold text-primary mt-1">{{ book.sale_price|intcomma }} so‘m</div>
+                    <a href="{{ book.get_absolute_url }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p>Bu kategoriyada kitoblar topilmadi.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
