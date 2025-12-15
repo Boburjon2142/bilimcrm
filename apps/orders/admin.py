@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import DeliveryNotice, DeliveryZone, Order, OrderItem
+from .models import DeliveryNotice, DeliveryZone, Order, OrderItem, DeliverySettings
 from .services.delivery import build_courier_url, generate_google_maps_link, recalculate_delivery
 
 
@@ -64,3 +64,14 @@ class DeliveryNoticeAdmin(admin.ModelAdmin):
     list_display = ("title", "is_active", "updated_at")
     list_filter = ("is_active",)
     search_fields = ("title", "body")
+
+
+@admin.register(DeliverySettings)
+class DeliverySettingsAdmin(admin.ModelAdmin):
+    list_display = ("base_fee_uzs", "per_km_fee_uzs", "min_fee_uzs", "max_fee_uzs", "free_over_uzs", "updated_at")
+
+    def has_add_permission(self, request):
+        # Enforce singleton: allow add only if none exists.
+        if DeliverySettings.objects.exists():
+            return False
+        return super().has_add_permission(request)

@@ -88,6 +88,32 @@ class DeliveryNotice(models.Model):
         return self.title
 
 
+class DeliverySettings(models.Model):
+    """Singleton-style delivery config editable via admin."""
+
+    base_fee_uzs = models.PositiveIntegerField(default=10000)
+    per_km_fee_uzs = models.PositiveIntegerField(default=2000)
+    min_fee_uzs = models.PositiveIntegerField(default=10000)
+    max_fee_uzs = models.PositiveIntegerField(default=60000)
+    free_over_uzs = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Bo'sh qoldirilsa, chegirma yo'q"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Yetkazib berish sozlamasi"
+        verbose_name_plural = "Yetkazib berish sozlamalari"
+
+    def __str__(self):
+        return "Yetkazib berish sozlamasi"
+
+    @classmethod
+    def get_active(cls):
+        # Always return a single config row; create defaults if missing.
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
     book = models.ForeignKey(Book, on_delete=models.PROTECT)

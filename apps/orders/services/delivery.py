@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 
 from django.conf import settings
 
-from ..models import DeliveryZone, Order
+from ..models import DeliveryZone, Order, DeliverySettings
 
 EARTH_RADIUS_KM = 6371.0088
 
@@ -31,12 +31,16 @@ def _round_to_nearest(value: Decimal, base_unit: int = 1000) -> Decimal:
 
 
 def compute_delivery_fee(distance_km: Decimal, subtotal: Decimal) -> Tuple[int, Dict]:
-    """Compute delivery fee based on settings and distance."""
-    base_fee = Decimal(settings.DELIVERY_BASE_FEE_UZS)
-    per_km_fee = Decimal(settings.DELIVERY_PER_KM_FEE_UZS)
-    min_fee = Decimal(settings.DELIVERY_MIN_FEE_UZS)
-    max_fee = Decimal(settings.DELIVERY_MAX_FEE_UZS)
-    free_over = settings.DELIVERY_FREE_OVER_UZS
+    """
+    Compute delivery fee based on DB-backed settings (editable in admin) with env defaults.
+    Admin control lets ops change pricing without deploy; env values remain safe fallback.
+    """
+    cfg = DeliverySettings.get_active()
+    base_fee = Decimal(cfg.base_fee_uzs or settings.DELIVERY_BASE_FEE_UZS)
+    per_km_fee = Decimal(cfg.per_km_fee_uzs or settings.DELIVERY_PER_KM_FEE_UZS)
+    min_fee = Decimal(cfg.min_fee_uzs or settings.DELIVERY_MIN_FEE_UZS)
+    max_fee = Decimal(cfg.max_fee_uzs or settings.DELIVERY_MAX_FEE_UZS)
+    free_over = cfg.free_over_uzs if cfg.free_over_uzs is not None else settings.DELIVERY_FREE_OVER_UZS
 
     raw_fee = base_fee + (per_km_fee * distance_km)
 
