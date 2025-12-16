@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from urllib.parse import urlparse
+
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -93,23 +95,44 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.backend.wsgi.application"
 
-# DB engine normalization
-engine = os.environ.get("DJANGO_DB_ENGINE", "sqlite3")
-if engine == "sqlite":
-    engine = "sqlite3"
-if "." not in engine:
-    engine = f"django.db.backends.{engine}"
+# Prefer DATABASE_URL (postgres), fallback to explicit env vars, then sqlite.
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-DATABASES = {
-    "default": {
-        "ENGINE": engine,
-        "NAME": os.environ.get("DJANGO_DB_NAME", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("DJANGO_DB_USER", ""),
-        "PASSWORD": os.environ.get("DJANGO_DB_PASSWORD", ""),
-        "HOST": os.environ.get("DJANGO_DB_HOST", ""),
-        "PORT": os.environ.get("DJANGO_DB_PORT", ""),
+if DATABASE_URL:
+    parsed = urlparse(DATABASE_URL)
+    ENGINE = "django.db.backends.postgresql"
+    DATABASES = {
+        "default": {
+            "ENGINE": ENGINE,
+            "NAME": parsed.path.lstrip("/") or os.environ.get("DJANGO_DB_NAME", ""),
+            "USER": parsed.username or os.environ.get("DJANGO_DB_USER", ""),
+            "PASSWORD": parsed.password or os.environ.get("DJANGO_DB_PASSWORD", ""),
+            "HOST": parsed.hostname or os.environ.get("DJANGO_DB_HOST", "localhost"),
+            "PORT": parsed.port or os.environ.get("DJANGO_DB_PORT", "5432"),
+        }
     }
-}
+else:
+    engine = os.environ.get("DJANGO_DB_ENGINE", "postgresql")
+    if engine in {"sqlite", "sqlite3"}:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": os.environ.get("DJANGO_DB_NAME", BASE_DIR / "db.sqlite3"),
+            }
+        }
+    else:
+        if "." not in engine:
+            engine = f"django.db.backends.{engine}"
+        DATABASES = {
+            "default": {
+                "ENGINE": engine,
+                "NAME": os.environ.get("DJANGO_DB_NAME", "bilimstore"),
+                "USER": os.environ.get("DJANGO_DB_USER", "bilimstore"),
+                "PASSWORD": os.environ.get("DJANGO_DB_PASSWORD", "bilimstore"),
+                "HOST": os.environ.get("DJANGO_DB_HOST", "localhost"),
+                "PORT": os.environ.get("DJANGO_DB_PORT", "5432"),
+            }
+        }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

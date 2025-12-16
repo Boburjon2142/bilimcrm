@@ -79,10 +79,11 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="open-google-maps">Google Maps’da ochish</button>
             </div>
             <div class="map-shell">
-                <div id="order-map" style="position: relative;"></div>
+                <div id="order-map" style="position: relative;" data-default-lat="{{ origin_lat }}" data-default-lng="{{ origin_lng }}"></div>
             </div>
             <small class="text-muted d-block mt-1">Xaritaga bosib nuqta tanlang — koordinata va Google Maps havolasi avtomatik to‘ldiriladi.</small>
             <div class="text-danger small" id="map-error" style="display:none;"></div>
+            <div id="delivery-quote" class="alert alert-secondary small mt-2" style="display:none;"></div>
         </div>
         <div class="mt-3">
             <label class="form-label">Google Maps havolasi (ixtiyoriy)</label>
@@ -120,7 +121,7 @@
             </div>
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <span class="fw-semibold">Umumiy</span>
-                <span class="fw-bold">{{ cart_total|floatformat:0|intcomma }} so‘m</span>
+                <span class="fw-bold" id="checkout-subtotal" data-subtotal="{{ cart_total|floatformat:0 }}">{{ cart_total|floatformat:0|intcomma }} so‘m</span>
             </div>
         </div>
     </div>
@@ -137,11 +138,68 @@ document.addEventListener("DOMContentLoaded", function () {
     const manualLng = document.getElementById("manual-lng");
     const mapsInput = document.getElementById("id_maps_link");
     const openMapsBtn = document.getElementById("open-google-maps");
+    const quoteBox = document.getElementById("delivery-quote");
+    const subtotalEl = document.getElementById("checkout-subtotal");
     if (!latInput || !lngInput || !mapBox) return;
 
-    let centerLat = parseFloat(latInput.value) || 41.2995;
-    let centerLng = parseFloat(lngInput.value) || 69.2401;
+    const defaultLat = parseFloat(mapBox.dataset.defaultLat) || 41.2995;
+    const defaultLng = parseFloat(mapBox.dataset.defaultLng) || 69.2401;
+    let centerLat = parseFloat(latInput.value);
+    let centerLng = parseFloat(lngInput.value);
+    if (!isFinite(centerLat) || !isFinite(centerLng)) {
+        centerLat = defaultLat;
+        centerLng = defaultLng;
+        latInput.value = centerLat.toFixed(6);
+        lngInput.value = centerLng.toFixed(6);
+        setMapsLinkFromCoords();
+    }
     const zoom = 13;
+
+    function formatSum(sum) {
+        return sum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+
+    function fetchQuote() {
+        if (!quoteBox) return;
+        if (!latInput.value || !lngInput.value) {
+            quoteBox.style.display = "none";
+            return;
+        }
+        const subtotal = subtotalEl ? subtotalEl.dataset.subtotal : "0";
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch("{% url 'delivery_quote' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": csrftoken,
+            },
+            body: new URLSearchParams({
+                lat: latInput.value,
+                lng: lngInput.value,
+                subtotal: subtotal,
+            }),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.error) {
+                    quoteBox.className = "alert alert-warning small mt-2";
+                    quoteBox.textContent = data.error;
+                } else {
+                    quoteBox.className = "alert alert-info small mt-2";
+                    quoteBox.innerHTML = `
+                        <strong>Yetkazib berish:</strong> ${formatSum(data.fee)} so‘m
+                        &nbsp; | &nbsp;
+                        <strong>Masofa:</strong> ${Number(data.distance_km || 0).toFixed(2)} km
+                    `;
+                }
+                quoteBox.style.display = "block";
+            })
+            .catch(() => {
+                quoteBox.className = "alert alert-warning small mt-2";
+                quoteBox.textContent = "Yetkazib berish narxini hisoblab bo‘lmadi.";
+                quoteBox.style.display = "block";
+            });
+    }
 
     function setMapsLinkFromCoords() {
         if (!mapsInput) return;
@@ -175,10 +233,7 @@ document.addEventListener("DOMContentLoaded", function () {
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                 attribution: "&copy; OpenStreetMap",
             }).addTo(map);
-            let marker = null;
-            if (latInput.value && lngInput.value) {
-                marker = L.marker([centerLat, centerLng]).addTo(map);
-            }
+            let marker = L.marker([centerLat, centerLng]).addTo(map);
             map.on("click", function (e) {
                 const { lat, lng } = e.latlng;
                 latInput.value = lat.toFixed(6);
@@ -189,6 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 else marker = L.marker([lat, lng]).addTo(map);
                 if (mapError) mapError.style.display = "none";
                 setMapsLinkFromCoords();
+                fetchQuote();
             });
         } catch (err) {
             buildStaticFallback();
@@ -239,6 +295,7 @@ document.addEventListener("DOMContentLoaded", function () {
             img.src = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat.toFixed(6)},${lng.toFixed(6)}&zoom=${zoom}&size=900x450&markers=${lat.toFixed(6)},${lng.toFixed(6)},red-pushpin`;
             if (mapError) mapError.style.display = "none";
             setMapsLinkFromCoords();
+            fetchQuote();
         });
     }
 
@@ -255,6 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (map) map.setView([centerLat, centerLng], 13);
             if (mapError) mapError.style.display = "none";
             setMapsLinkFromCoords();
+            fetchQuote();
         };
         manualLat.addEventListener("change", syncManual);
         manualLng.addEventListener("change", syncManual);

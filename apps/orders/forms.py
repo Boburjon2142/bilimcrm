@@ -22,7 +22,7 @@ class CheckoutForm(forms.ModelForm):
             "phone": forms.TextInput(attrs={"class": "form-control", "placeholder": "+998 90 123 45 67"}),
             "extra_phone": forms.TextInput(attrs={"class": "form-control", "placeholder": "Qo‘shimcha raqam (ixtiyoriy)"}),
             "location": forms.TextInput(attrs={"class": "form-control", "placeholder": "Lokatsiya (shahar/tuman yoki GPS)"}),
-            "address": forms.TextInput(attrs={"class": "form-control", "placeholder": "Manzil"}),
+            "address": forms.TextInput(attrs={"class": "form-control", "placeholder": "Mo‘ljal (masalan: Atlas savdo markazi)"}),
             "latitude": forms.HiddenInput(attrs={"id": "id_latitude"}),
             "longitude": forms.HiddenInput(attrs={"id": "id_longitude"}),
             "maps_link": forms.URLInput(
