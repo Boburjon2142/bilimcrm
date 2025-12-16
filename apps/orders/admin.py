@@ -1,8 +1,16 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.html import format_html
 
+from django import forms
+from django.templatetags.static import static
+
 from .models import DeliveryNotice, DeliveryZone, Order, OrderItem, DeliverySettings
-from .services.delivery import build_courier_url, generate_google_maps_link, recalculate_delivery
+from .services.delivery import (
+    build_courier_url,
+    generate_google_maps_link,
+    parse_coordinates_from_link,
+    recalculate_delivery,
+)
 
 
 class OrderItemInline(admin.TabularInline):
@@ -66,9 +74,38 @@ class DeliveryNoticeAdmin(admin.ModelAdmin):
     search_fields = ("title", "body")
 
 
+class DeliverySettingsForm(forms.ModelForm):
+    class Meta:
+        model = DeliverySettings
+        fields = "__all__"
+
+    class Media:
+        css = {
+            "all": ("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",),
+        }
+        js = (
+            "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+            static("orders/admin_shop_origin.js"),
+        )
+
+
 @admin.register(DeliverySettings)
 class DeliverySettingsAdmin(admin.ModelAdmin):
+    form = DeliverySettingsForm
     list_display = ("base_fee_uzs", "per_km_fee_uzs", "min_fee_uzs", "max_fee_uzs", "free_over_uzs", "updated_at")
+
+    def save_model(self, request, obj, form, change):
+        """
+        Allow ops to paste a map link; we parse it into coordinates so distance
+        calculations work even if they don't set lat/lng manually.
+        """
+        coords = parse_coordinates_from_link(obj.shop_location_link or "")
+        if coords:
+            obj.shop_lat, obj.shop_lng = coords
+            messages.info(request, "Do‘kon koordinatalari kiritilgan havoladan olindi.")
+        elif obj.shop_location_link:
+            messages.warning(request, "Koordinatalar havoladan aniqlanmadi, iltimos linkni tekshiring.")
+        super().save_model(request, obj, form, change)
 
     def has_add_permission(self, request):
         # Enforce singleton: allow add only if none exists.

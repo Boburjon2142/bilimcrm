@@ -54,7 +54,9 @@
       .hero-card { border-radius:24px; overflow:hidden; box-shadow:0 12px 30px rgba(11,60,110,0.35); background: linear-gradient(135deg, #0B3C6E, #06284D); padding:6px; }
       .hero-card .hero-img { border-radius:16px; }
       .hero-divider { height:12px; background: linear-gradient(180deg, rgba(30,42,56,0.12), rgba(30,42,56,0)); border-radius:0 0 16px 16px; margin-bottom:10px; }
-      footer { background:#000; color:#fff; padding:18px 0; margin-top:32px; }
+      footer { background:#000; color:#fff; padding:32px 0; margin-top:32px; }
+      footer .footer-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+      footer .footer-brand { font-size:18px; font-weight:600; }
       footer .text-muted { color:#d1d5db !important; }
       .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(30,42,56,0.92); border-top:0; display:grid; grid-template-columns:repeat(5,1fr); padding:10px 6px 14px; z-index:9999; box-shadow:0 -8px 24px rgba(0,0,0,0.25); border-radius:18px 18px 0 0; backdrop-filter:blur(12px); }
       .bottom-link { display:flex; flex-direction:column; align-items:center; gap:2px; color:rgba(255,255,255,0.75); text-decoration:none; font-size:11px; transition:color .15s ease, transform .12s ease; }
@@ -96,9 +98,10 @@
   </main>
 
   {% cache 1800 footer %}
-  <footer class="text-center">
-    <div class="page-shell">
-      <span class="text-muted small">&copy; {% now "Y" %} BILIM UZ</span>
+  <footer>
+    <div class="page-shell footer-inner">
+      <div class="footer-brand">BILIM UZ — kitob do‘koni</div>
+      <div class="text-muted small">&copy; {% now "Y" %} Barcha huquqlar himoyalangan</div>
     </div>
   </footer>
   {% endcache %}

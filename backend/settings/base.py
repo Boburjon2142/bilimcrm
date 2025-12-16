@@ -16,21 +16,37 @@ ALLOWED_HOSTS = [
     if h
 ]
 
-# Caching: LocMem for local/dev; Redis-ready snippet commented for prod
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-bilim-cache",
-        "TIMEOUT": None,  # rely on per-use timeouts
-    },
-    # "default": {  # Redis example for production
-    #     "BACKEND": "django.core.cache.backends.redis.RedisCache",
-    #     "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
-    #     "OPTIONS": {
-    #         "client_class": "django_redis.client.DefaultClient",
-    #     },
-    # }
-}
+# Caching:
+# - DEBUG: DummyCache (no persistence) so admin o'zgarishlari darhol ko'rinadi.
+# - REDIS_URL set: Redis (shared cache for multiple workers).
+# - Else: LocMem (single-process fallback).
+_redis_url = os.environ.get("REDIS_URL") or os.environ.get("DJANGO_REDIS_URL")
+if DEBUG:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+            "TIMEOUT": None,
+        }
+    }
+elif _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _redis_url,
+            "OPTIONS": {
+                "client_class": "django_redis.client.DefaultClient",
+            },
+            "TIMEOUT": None,  # rely on per-use timeouts
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-bilim-cache",
+            "TIMEOUT": None,  # rely on per-use timeouts
+        }
+    }
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -110,7 +126,11 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Use manifest storage in production (needs collectstatic); simpler storage in DEBUG to avoid missing manifest errors.
+if DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+else:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

@@ -98,6 +98,13 @@ class DeliverySettings(models.Model):
     free_over_uzs = models.PositiveIntegerField(
         null=True, blank=True, help_text="Bo'sh qoldirilsa, chegirma yo'q"
     )
+    shop_location_link = models.URLField("Do‘kon manzili (havola)", blank=True, default="")
+    shop_lat = models.DecimalField(
+        "Do‘kon lat (ixtiyoriy)", max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    shop_lng = models.DecimalField(
+        "Do‘kon lng (ixtiyoriy)", max_digits=9, decimal_places=6, null=True, blank=True
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

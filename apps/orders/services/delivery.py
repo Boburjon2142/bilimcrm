@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import math
+import re
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Dict, Optional, Tuple
+from urllib.parse import parse_qs, urlparse
 
 from django.conf import settings
 
@@ -114,8 +116,13 @@ def check_zone_block(lat: float, lng: float) -> Tuple[bool, Optional[str], Optio
     return False, None, None
 
 
-def build_courier_url(lat: float, lng: float) -> str:
-    origin = f"{settings.SHOP_LAT},{settings.SHOP_LNG}"
+def build_courier_url(lat: float, lng: float, origin_lat: float, origin_lng: float) -> str:
+    """
+    Build a directions URL for the courier.
+    Origin is taken from delivery settings (admin) so the route always starts
+    from the configured shop location instead of a hardcoded default.
+    """
+    origin = f"{origin_lat},{origin_lng}"
     return (
         "https://www.google.com/maps/dir/?api=1"
         f"&origin={origin}"
@@ -129,11 +136,54 @@ def generate_google_maps_link(lat: float, lng: float) -> str:
     return f"https://www.google.com/maps?q={lat},{lng}"
 
 
+def parse_coordinates_from_link(link: str) -> Optional[Tuple[float, float]]:
+    """
+    Try to extract lat/lng from common map URLs (Google, Yandex, plain "lat,lng").
+    This lets admins paste a map link instead of manual coordinates.
+    """
+    if not link:
+        return None
+
+    def _extract(text: str) -> Optional[Tuple[float, float]]:
+        match = re.search(r"(-?\\d+\\.\\d+)\\s*,\\s*(-?\\d+\\.\\d+)", text)
+        if match:
+            return float(match.group(1)), float(match.group(2))
+        return None
+
+    parsed = urlparse(link)
+    query = parse_qs(parsed.query)
+
+    # Google/Yandex often use q=lat,lng
+    if "q" in query and query["q"]:
+        coords = _extract(query["q"][0])
+        if coords:
+            return coords
+
+    # Google Maps short link may store coords in "ll" or "query"
+    for key in ("ll", "query"):
+        if key in query and query[key]:
+            coords = _extract(query[key][0])
+            if coords:
+                return coords
+
+    # Path or fragment can contain @lat,lng
+    path_part = f"{parsed.path}{parsed.fragment}"
+    coords = _extract(path_part)
+    if coords:
+        return coords
+
+    return None
+
+
 def recalculate_delivery(order: Order, save: bool = True) -> Order:
     """
     Compute and persist delivery-related fields for an order.
     Caller should ensure order has latitude/longitude when delivery is needed.
     """
+    cfg = DeliverySettings.get_active()
+    origin_lat = float(cfg.shop_lat) if cfg.shop_lat is not None else float(settings.SHOP_LAT)
+    origin_lng = float(cfg.shop_lng) if cfg.shop_lng is not None else float(settings.SHOP_LNG)
+
     has_coords = order.latitude is not None and order.longitude is not None
     distance_decimal = Decimal("0.00")
     courier_url = ""
@@ -142,15 +192,10 @@ def recalculate_delivery(order: Order, save: bool = True) -> Order:
     blocked = False
 
     if has_coords:
-        distance_km = haversine_distance_km(
-            float(settings.SHOP_LAT),
-            float(settings.SHOP_LNG),
-            float(order.latitude),
-            float(order.longitude),
-        )
+        distance_km = haversine_distance_km(origin_lat, origin_lng, float(order.latitude), float(order.longitude))
         distance_decimal = Decimal(distance_km).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         blocked, zone_message, zone_id = check_zone_block(float(order.latitude), float(order.longitude))
-        courier_url = build_courier_url(float(order.latitude), float(order.longitude))
+        courier_url = build_courier_url(float(order.latitude), float(order.longitude), origin_lat, origin_lng)
 
     subtotal = order.total_price or Decimal("0")
     if blocked or not has_coords:
