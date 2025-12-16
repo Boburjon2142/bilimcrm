@@ -1,10 +1,15 @@
-# Virtualenv
+# Virtualenv / tooling
 venv/
-.env
 .venv/
 .python-version
+.ruff_cache/
+.mypy_cache/
 
-# Python caches
+# Env files / secrets
+.env
+*.env
+
+# Python caches / logs
 __pycache__/
 *.pyc
 *.pyo
@@ -40,6 +45,4 @@ Thumbs.db
 .fleet/
 *.swp
 *.swo
-
-# Env files
-*.env
+*.orig
