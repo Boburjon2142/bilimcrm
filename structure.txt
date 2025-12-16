@@ -1,1 +1,63 @@
-|-- venv/ (virtual environment)) 
+bookstore/
+├─ manage.py
+├─ requirements.txt
+├─ .env
+├─ .gitignore
+├─ README.md
+├─ passenger_wsgi.py
+├─ media.conf
+├─ db.sqlite3
+├─ apps/
+│  ├─ catalog/
+│  │  ├─ admin.py
+│  │  ├─ apps.py
+│  │  ├─ context_processors.py
+│  │  ├─ models.py
+│  │  ├─ urls.py
+│  │  ├─ views.py
+│  │  └─ migrations/…
+│  └─ orders/
+│     ├─ admin.py
+│     ├─ apps.py
+│     ├─ cart.py
+│     ├─ context_processors.py
+│     ├─ forms.py
+│     ├─ models.py
+│     ├─ services/
+│     │  └─ delivery.py
+│     ├─ signals.py
+│     ├─ urls.py
+│     ├─ views.py
+│     └─ migrations/…
+├─ backend/
+│  ├─ backend/
+│  │  ├─ __init__.py
+│  │  ├─ urls.py
+│  │  ├─ wsgi.py
+│  │  └─ asgi.py
+│  └─ settings/
+│     ├─ __init__.py
+│     ├─ base.py
+│     ├─ dev.py
+│     └─ settings.py
+├─ templates/
+│  ├─ base.html
+│  ├─ home.html
+│  ├─ checkout.html
+│  ├─ order_confirmation.html
+│  ├─ cart.html
+│  ├─ favorites.html
+│  ├─ search_results.html
+│  ├─ about.html
+│  ├─ book_detail.html
+│  ├─ book_list.html
+│  ├─ authors_list.html
+│  ├─ categories_list.html
+│  └─ category_list.html
+├─ static/
+│  └─ orders/
+│     └─ admin_shop_origin.js
+├─ media/
+│  └─ (uploaded files)
+├─ tmp/
+└─ venv/ (ignored)
