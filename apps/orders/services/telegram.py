@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from html import escape as html_escape
 from typing import List
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -47,11 +48,18 @@ def _send_telegram_message(text: str) -> None:
 
     # Telegram hard limit is 4096 chars for a message; keep safe.
     text = (text or "").strip()
-    if len(text) > 3800:
-        text = text[:3800] + "\n...\n(uzun xabar qisqartirildi)"
+    if len(text) > 3900:
+        text = text[:3900] + "\n...\n(uzun xabar qisqartirildi)"
 
     for chat_id in chat_ids:
-        body = urlencode({"chat_id": chat_id, "text": text}).encode("utf-8")
+        body = urlencode(
+            {
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": "true",
+            }
+        ).encode("utf-8")
         req = Request(url, data=body, method="POST")
         req.add_header("Content-Type", "application/x-www-form-urlencoded")
         try:
@@ -73,7 +81,7 @@ def _format_money_uzs(value) -> str:
     try:
         v = int(value)
     except Exception:
-        return str(value)
+        return html_escape(str(value))
     return f"{v:,}".replace(",", " ") + " so'm"
 
 
@@ -88,40 +96,57 @@ def send_order_created(order_id: int) -> None:
     if not order:
         return
 
+    def e(value) -> str:
+        return html_escape("" if value is None else str(value), quote=True)
+
+    def label(name: str, value: str) -> str:
+        return f"<b>{e(name)}:</b> {value}"
+
+    def _truncate(s: str, max_len: int) -> str:
+        if len(s) <= max_len:
+            return s
+        return s[:max_len] + "…"
+
     lines: List[str] = []
-    lines.append("Yangi buyurtma")
-    lines.append(f"ID: #{order.id}")
+    lines.append("<b>Yangi buyurtma</b>")
+    lines.append(label("ID", f"#{order.id}"))
     if order.created_at:
         ts = timezone.localtime(order.created_at)
-        lines.append(f"Vaqt: {ts:%Y-%m-%d %H:%M}")
+        lines.append(label("Vaqt", e(f"{ts:%Y-%m-%d %H:%M}")))
     lines.append("")
 
-    lines.append(f"F.I.Sh: {order.full_name}")
-    lines.append(f"Telefon: {order.phone}")
+    lines.append(label("F.I.Sh", e(order.full_name)))
+    lines.append(label("Telefon", e(order.phone)))
     if order.extra_phone:
-        lines.append(f"Qo‘shimcha: {order.extra_phone}")
-    lines.append(f"Manzil: {order.address}")
+        lines.append(label("Qo‘shimcha", e(order.extra_phone)))
+    lines.append(label("Mo'ljal", e(order.address)))
     if order.address_text:
-        lines.append(f"Manzil (matn): {order.address_text}")
+        lines.append(label("Manzil (matn)", e(order.address_text)))
     if order.location:
-        lines.append(f"Lokatsiya: {order.location}")
+        lines.append(label("Lokatsiya", e(order.location)))
     if order.maps_link:
-        lines.append(f"Xarita: {order.maps_link}")
+        url = e(order.maps_link)
+        lines.append(f"<b>Xarita:</b> <a href=\"{url}\">Google Maps</a>")
     lines.append("")
 
-    lines.append("Mahsulotlar:")
+    lines.append("<b>Mahsulotlar:</b>")
     for item in order.items.all():
         title = getattr(item.book, "title", str(item.book))
-        lines.append(f"- {title} x{item.quantity} = {item.line_total():.2f}")
+        lines.append(f"- {e(title)} x{item.quantity} = {e(f'{item.line_total():.2f}')}")
     lines.append("")
 
-    lines.append(f"To‘lov: {order.get_payment_type_display()}")
-    lines.append(f"Jami: {order.total_price:.2f}")
-    lines.append(f"Yetkazish: {_format_money_uzs(order.delivery_fee)} ({order.delivery_distance_km} km)")
-    lines.append(f"Zona: {order.delivery_zone_status}")
+    lines.append(label("To‘lov", e(order.get_payment_type_display())))
+    lines.append(label("Jami", e(f"{order.total_price:.2f}")))
+    lines.append(
+        label(
+            "Yetkazish",
+            f"{_format_money_uzs(order.delivery_fee)} ({e(order.delivery_distance_km)} km)",
+        )
+    )
+    lines.append(label("Zona", e(order.delivery_zone_status)))
     if order.note:
         lines.append("")
-        lines.append("Izoh:")
-        lines.append(order.note)
+        lines.append("<b>Izoh:</b>")
+        lines.append(_truncate(e(order.note), 900))
 
     _send_telegram_message("\n".join(lines))

@@ -23,7 +23,7 @@ class Order(models.Model):
     extra_phone = models.CharField("Qo‘shimcha telefon", max_length=50, blank=True)
     location = models.CharField("Lokatsiya", max_length=255, blank=True)
     address_text = models.CharField("Qo‘shimcha manzil matni", max_length=255, blank=True)
-    address = models.CharField("Manzil", max_length=255)
+    address = models.CharField("Mo‘ljal", max_length=255)
     note = models.TextField("Izoh", blank=True)
     payment_type = models.CharField("To‘lov turi", max_length=20, choices=PAYMENT_CHOICES, default="cash")
     status = models.CharField("Holat", max_length=20, choices=STATUS_CHOICES, default="new")

@@ -17,6 +17,9 @@ class CheckoutForm(forms.ModelForm):
             "note",
             "payment_type",
         ]
+        labels = {
+            "address": "Mo'ljal",
+        }
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "F.I.Sh"}),
             "phone": forms.TextInput(attrs={"class": "form-control", "placeholder": "+998 90 123 45 67"}),
