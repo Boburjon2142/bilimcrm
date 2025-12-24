@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Courier, Customer, InventoryLog, Expense
+from .models import Courier, Customer, InventoryLog, Expense, Debt
 
 
 @admin.register(Customer)
@@ -38,3 +38,10 @@ class ExpenseAdmin(admin.ModelAdmin):
     list_display = ("title", "amount", "spent_on", "created_at")
     list_filter = ("spent_on",)
     search_fields = ("title", "note")
+
+
+@admin.register(Debt)
+class DebtAdmin(admin.ModelAdmin):
+    list_display = ("full_name", "phone", "amount", "is_paid", "created_at")
+    list_filter = ("is_paid",)
+    search_fields = ("full_name", "phone", "note")

@@ -28,7 +28,7 @@ def _operator_block(request):
 from apps.catalog.models import Book
 from apps.orders.cart import Cart
 from apps.orders.models import Order, OrderItem
-from .models import Courier, Customer, InventoryLog, Expense
+from .models import Courier, Customer, InventoryLog, Expense, Debt
 from .utils.pdf import build_pdf
 
 
@@ -76,59 +76,74 @@ def dashboard(request):
         .annotate(total=Count("id"))
         .order_by("-total")[:8]
     )
-    weekly_revenue = []
-    weekly_expenses = []
+    hour_start = 8
+    hour_end = 20
+    tz = timezone.get_current_timezone()
+    hourly_income = []
     max_total = Decimal("0")
-    for offset in range(6, -1, -1):
-        day = today - timedelta(days=offset)
+
+    for hour in range(hour_start, hour_end + 1):
+        start_dt = timezone.make_aware(datetime.combine(today, time(hour, 0)), tz)
+        end_dt = start_dt + timedelta(hours=1)
         total = (
-            Order.objects.filter(created_at__date=day)
+            Order.objects.filter(created_at__gte=start_dt, created_at__lt=end_dt)
             .aggregate(total=Sum("total_price"))
-            .get("total")
-            or Decimal("0")
-        )
-        expense_total = (
-            Expense.objects.filter(spent_on=day)
-            .aggregate(total=Sum("amount"))
             .get("total")
             or Decimal("0")
         )
         if total > max_total:
             max_total = total
-        if expense_total > max_total:
-            max_total = expense_total
-        weekly_revenue.append({"label": day.strftime("%d.%m"), "total": total})
-        weekly_expenses.append({"label": day.strftime("%d.%m"), "total": expense_total})
-    for item in weekly_revenue:
-        if max_total:
-            item["percent"] = float((item["total"] / max_total) * Decimal("100"))
-        else:
-            item["percent"] = 0
-    for item in weekly_expenses:
-        if max_total:
-            item["percent"] = float((item["total"] / max_total) * Decimal("100"))
-        else:
-            item["percent"] = 0
+        hourly_income.append({"label": f"{hour:02d}:00", "total": total})
 
-    weekly_data = []
+    hourly_data = []
     bar_max = 70
     bar_min = 4
+
     def _height(total: Decimal) -> int:
         if max_total <= 0:
             return bar_min
         ratio = float(total / max_total)
         return int(round(bar_min + (bar_max - bar_min) * ratio))
-    for idx, item in enumerate(weekly_revenue):
-        expense_item = weekly_expenses[idx] if idx < len(weekly_expenses) else {"percent": 0}
-        weekly_data.append(
+
+    for item in hourly_income:
+        hourly_data.append(
             {
                 "label": item["label"],
                 "income": item["total"],
                 "income_height": _height(item["total"]),
-                "expense": expense_item.get("total", Decimal("0")),
-                "expense_height": _height(expense_item.get("total", Decimal("0"))),
+                "expense": Decimal("0"),
+                "expense_height": 0,
             }
         )
+
+    chart_width = 700
+    chart_height = 200
+    padding_left = 50
+    padding_right = 20
+    padding_top = 20
+    padding_bottom = 30
+    plot_width = chart_width - padding_left - padding_right
+    plot_height = chart_height - padding_top - padding_bottom
+    scale_max = max_total if max_total > 0 else Decimal("1")
+    points = []
+    dots = []
+    count = len(hourly_income)
+    for idx, item in enumerate(hourly_income):
+        if count > 1:
+            x = padding_left + (plot_width * idx / (count - 1))
+        else:
+            x = padding_left + (plot_width / 2)
+        ratio = float(item["total"] / scale_max) if scale_max else 0.0
+        y = padding_top + (plot_height * (1 - ratio))
+        points.append(f"{x:.1f},{y:.1f}")
+        dots.append({"x": round(x, 1), "y": round(y, 1), "value": item["total"]})
+
+    chart_ticks = []
+    for step in range(5):
+        tick_ratio = step / 4
+        value = (scale_max * Decimal(1 - tick_ratio)).quantize(Decimal("1"))
+        y = padding_top + (plot_height * tick_ratio)
+        chart_ticks.append({"value": value, "y": round(y, 1)})
 
     context = {
         "orders_today": orders_today.count(),
@@ -138,7 +153,10 @@ def dashboard(request):
         "top_books": top_books,
         "top_customers": top_customers,
         "courier_stats": courier_stats,
-        "weekly_data": weekly_data,
+        "hourly_data": hourly_data,
+        "chart_points": " ".join(points),
+        "chart_dots": dots,
+        "chart_ticks": chart_ticks,
     }
     return render(request, "crm/dashboard.html", context)
 
@@ -317,11 +335,12 @@ def monthly_report(request):
     end_dt = timezone.make_aware(end_dt, tz)
 
     if request.method == "POST":
+        form_type = (request.POST.get("form_type") or "").strip()
         title = (request.POST.get("title") or "").strip()
         amount_raw = (request.POST.get("amount") or "").strip()
         spent_on_raw = (request.POST.get("spent_on") or "").strip()
         note = (request.POST.get("note") or "").strip()
-        if title and amount_raw:
+        if form_type == "expense" and title and amount_raw:
             try:
                 amount = Decimal(amount_raw)
             except (TypeError, ValueError):
@@ -337,6 +356,20 @@ def monthly_report(request):
                     title=title,
                     amount=amount,
                     spent_on=spent_on,
+                    note=note,
+                )
+                return redirect("crm_report")
+        if form_type == "debt" and title and amount_raw:
+            try:
+                amount = Decimal(amount_raw)
+            except (TypeError, ValueError):
+                amount = None
+            phone = (request.POST.get("phone") or "").strip()
+            if amount is not None:
+                Debt.objects.create(
+                    full_name=title,
+                    phone=phone,
+                    amount=amount,
                     note=note,
                 )
                 return redirect("crm_report")
@@ -356,6 +389,7 @@ def monthly_report(request):
     net_total = income_total - expense_total
 
     expenses = Expense.objects.filter(spent_on__gte=start_date, spent_on__lte=end_date)[:200]
+    debts = Debt.objects.filter(is_paid=False).order_by("-created_at")[:200]
 
     base_month = start_date
     last_day = calendar.monthrange(base_month.year, base_month.month)[1]
@@ -381,6 +415,7 @@ def monthly_report(request):
             "expense_total": expense_total,
             "net_total": net_total,
             "expenses": expenses,
+            "debts": debts,
             "start_date": start_date,
             "end_date": end_date,
             "start_time": start_time.strftime("%H:%M"),
@@ -388,6 +423,24 @@ def monthly_report(request):
             "quick_ranges": quick_ranges,
         },
     )
+
+
+@staff_member_required
+def expenses_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
+    expenses = Expense.objects.all().order_by("-spent_on", "-created_at")[:500]
+    return render(request, "crm/expenses.html", {"expenses": expenses})
+
+
+@staff_member_required
+def debts_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
+    debts = Debt.objects.all().order_by("-created_at")[:500]
+    return render(request, "crm/debts.html", {"debts": debts})
 
 
 @staff_member_required
