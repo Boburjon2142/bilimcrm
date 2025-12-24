@@ -155,6 +155,8 @@ if _redis_url and _redis_reachable(_redis_url):
             "TIMEOUT": None,
         }
     }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
 else:
     CACHES = {
         "default": {

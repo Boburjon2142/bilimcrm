@@ -3,6 +3,25 @@
 
 {% block title %}Buyurtmalar{% endblock %}
 
+{% block extra_css %}
+<style>
+  @media (max-width: 768px) {
+    .crm-orders table { border:0; }
+    .crm-orders thead { display:none; }
+    .crm-orders tbody, .crm-orders tr, .crm-orders td { display:block; width:100%; }
+    .crm-orders tr { border:1px solid #e6e6e6; border-radius:12px; padding:10px 12px; margin-bottom:12px; background:#fff; }
+    .crm-orders td { border:0; padding:6px 0; display:flex; justify-content:space-between; gap:12px; }
+    .crm-orders td::before { content: attr(data-label); font-weight:600; color:#64748b; }
+    .crm-orders .actions-cell { padding-top:10px; }
+    .crm-orders .actions-cell::before { content: "Amal"; }
+    .crm-orders .actions-cell form { width:100%; }
+    .crm-orders .actions-cell select,
+    .crm-orders .actions-cell button { width:100%; }
+    .crm-orders .actions-cell .mt-2 { margin-top:8px !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <h4 class="mb-0">Buyurtmalar</h4>
@@ -20,7 +39,7 @@
   </div>
 </div>
 
-<div class="card crm-card p-3">
+<div class="card crm-card p-3 crm-orders">
   <table class="table crm-table align-middle">
     <thead>
       <tr>
@@ -37,14 +56,14 @@
     <tbody>
       {% for order in orders %}
       <tr>
-        <td>#{{ order.id }}</td>
-        <td>{{ order.full_name }}</td>
-        <td>{{ order.phone }}</td>
-        <td>{{ order.total_price|floatformat:0|intcomma }}</td>
-        <td>{{ order.get_order_source_display }}</td>
-        <td>{{ order.get_status_display }}</td>
-        <td>{{ order.courier|default:"—" }}</td>
-        <td>
+        <td data-label="ID">#{{ order.id }}</td>
+        <td data-label="Mijoz">{{ order.full_name }}</td>
+        <td data-label="Telefon">{{ order.phone }}</td>
+        <td data-label="Summa">{{ order.total_price|floatformat:0|intcomma }}</td>
+        <td data-label="Kanal">{{ order.get_order_source_display }}</td>
+        <td data-label="Status">{{ order.get_status_display }}</td>
+        <td data-label="Kuryer">{{ order.courier|default:"—" }}</td>
+        <td class="actions-cell">
           {% if order.order_source != "pos" %}
           <form method="post" class="d-flex flex-wrap gap-2">
             {% csrf_token %}

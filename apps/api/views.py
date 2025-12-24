@@ -1,5 +1,10 @@
 from rest_framework import viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from django.conf import settings
+from django.core.cache import cache
+from django.utils import timezone
 
 from apps.catalog.models import Book, Category, Author
 from apps.orders.models import Order
@@ -48,3 +53,14 @@ class CourierViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Courier.objects.all()
     serializer_class = CourierSerializer
     permission_classes = [IsAdminUser]
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def cache_demo(request):
+    key = "redis-demo:ping"
+    payload = {"ts": timezone.now().isoformat()}
+    cache.set(key, payload, timeout=60)
+    cached = cache.get(key)
+    backend = settings.CACHES["default"]["BACKEND"]
+    return Response({"backend": backend, "cached": cached})

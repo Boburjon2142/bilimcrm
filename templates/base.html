@@ -51,6 +51,8 @@
       .book-strip-card .meta { padding:10px 12px 12px; }
       .book-strip-card .meta .title { font-weight:700; font-size:14px; margin:0 0 4px; color:#0f172a; }
       .book-strip-card .meta .author { font-size:12px; color:#6b7280; margin:0; }
+      .book-card { border-radius:16px; overflow:hidden; }
+      .book-card .card-img-top { border-radius:16px 16px 0 0; }
       .hero-card { border-radius:24px; overflow:hidden; box-shadow:0 12px 30px rgba(11,60,110,0.35); background: linear-gradient(135deg, #0B3C6E, #06284D); padding:6px; }
       .hero-card .hero-img { border-radius:16px; }
       .hero-divider { height:12px; background: linear-gradient(180deg, rgba(30,42,56,0.12), rgba(30,42,56,0)); border-radius:0 0 16px 16px; margin-bottom:10px; }
@@ -63,6 +65,7 @@
       .bottom-link i { font-size:18px; color:inherit; transition:transform .12s ease; }
       .bottom-link.active { color:#F2C94C; transform:translateY(-2px); }
       .bottom-link.active i { color:#F2C94C; transform:translateY(-2px); }
+      @media (min-width: 1200px){ .hero-img{height:420px;} }
       @media (max-width: 768px){ .page-shell{padding-top:12px; padding-bottom:96px;} .hero-img{height:240px;} .book-strip-card{flex-basis:55vw; max-width:220px;} .pill-cat{min-width:160px;} footer{display:none;} }
       @media (max-width: 576px){
         .hero-img{height:200px;}
@@ -76,7 +79,7 @@
     </style>
 </head>
 <body>
-  {% cache 900 navbar %}
+  {% cache 900 navbar request.resolver_match.url_name request.user.is_staff %}
   <header class="topbar d-flex align-items-center justify-content-between">
     <a href="{% url 'home' %}" class="text-decoration-none">
       <span class="brand">BILIM UZ</span>
@@ -86,7 +89,7 @@
       <a href="{% url 'about' %}" class="icon-btn d-none d-md-grid" title="Maqsad"><i class="bi bi-info-circle"></i></a>
       <a href="{% url 'favorites' %}" class="icon-btn position-relative d-none d-md-grid" title="Sevimlilar"><i class="bi bi-heart"></i></a>
       <a href="{% url 'cart_detail' %}" class="icon-btn position-relative d-none d-md-grid" title="Savat"><i class="bi bi-cart3"></i></a>
-      {% if request.user.is_staff %}
+      {% if request.user.is_staff and request.resolver_match.url_name != 'home' %}
       <a href="{% url 'crm_dashboard' %}" class="icon-btn d-none d-md-grid" title="CRM panel"><i class="bi bi-speedometer2"></i></a>
       {% endif %}
       <a href="{% url 'search' %}" class="icon-btn" title="Qidiruv"><i class="bi bi-search"></i></a>

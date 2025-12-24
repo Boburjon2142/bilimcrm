@@ -3,34 +3,43 @@
 
 {% block title %}Mijozlar{% endblock %}
 
+{% block extra_css %}
+<style>
+  .crm-table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .crm-table-scroll table { min-width:640px; }
+</style>
+{% endblock %}
+
 {% block content %}
 <h4 class="mb-3">Mijozlar</h4>
 <div class="card crm-card p-3">
-  <table class="table crm-table align-middle">
-    <thead>
-      <tr>
-        <th>F.I.Sh</th>
-        <th>Telefon</th>
-        <th class="text-end">Chegirma</th>
-        <th class="text-end">Buyurtmalar</th>
-        <th class="text-end">LTV</th>
-        <th>Oxirgi faollik</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for customer in customers %}
-      <tr>
-        <td><a href="{% url 'crm_customer_detail' customer.id %}">{{ customer.full_name }}</a></td>
-        <td>{{ customer.phone }}</td>
-        <td class="text-end">{{ customer.discount_percent }}%</td>
-        <td class="text-end">{{ customer.orders_count }}</td>
-        <td class="text-end">{{ customer.total_spent|floatformat:0|intcomma }}</td>
-        <td>{{ customer.last_order_at|date:"Y-m-d H:i" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" class="text-muted">Mijozlar yo'q</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="crm-table-scroll">
+    <table class="table crm-table align-middle">
+      <thead>
+        <tr>
+          <th>F.I.Sh</th>
+          <th>Telefon</th>
+          <th class="text-end">Chegirma</th>
+          <th class="text-end">Buyurtmalar</th>
+          <th class="text-end">LTV</th>
+          <th>Oxirgi faollik</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for customer in customers %}
+        <tr>
+          <td><a href="{% url 'crm_customer_detail' customer.id %}">{{ customer.full_name }}</a></td>
+          <td>{{ customer.phone }}</td>
+          <td class="text-end">{{ customer.discount_percent }}%</td>
+          <td class="text-end">{{ customer.orders_count }}</td>
+          <td class="text-end">{{ customer.total_spent|floatformat:0|intcomma }}</td>
+          <td>{{ customer.last_order_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted">Mijozlar yo'q</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}

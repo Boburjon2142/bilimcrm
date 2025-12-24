@@ -3,10 +3,26 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum, F, DecimalField, ExpressionWrapper
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from datetime import timedelta
+
+
+def _is_operator(user) -> bool:
+    return user.is_authenticated and user.groups.filter(name="Operator").exists()
+
+
+def _operator_only_redirect(request):
+    if _is_operator(request.user):
+        return redirect("crm_pos")
+    return None
+
+
+def _operator_block(request):
+    if _is_operator(request.user):
+        return HttpResponseForbidden("Operator role has access only to POS.")
+    return None
 
 from apps.catalog.models import Book
 from apps.orders.cart import Cart
@@ -31,6 +47,9 @@ def _set_status_timestamps(order: Order, status: str) -> None:
 
 @staff_member_required
 def dashboard(request):
+    operator_response = _operator_only_redirect(request)
+    if operator_response:
+        return operator_response
     today = timezone.localdate()
     orders_today = Order.objects.filter(created_at__date=today)
     revenue_today = orders_today.aggregate(total=Sum("total_price")).get("total") or Decimal("0")
@@ -56,6 +75,24 @@ def dashboard(request):
         .annotate(total=Count("id"))
         .order_by("-total")[:8]
     )
+    weekly_revenue = []
+    max_total = Decimal("0")
+    for offset in range(6, -1, -1):
+        day = today - timedelta(days=offset)
+        total = (
+            Order.objects.filter(created_at__date=day)
+            .aggregate(total=Sum("total_price"))
+            .get("total")
+            or Decimal("0")
+        )
+        if total > max_total:
+            max_total = total
+        weekly_revenue.append({"label": day.strftime("%d.%m"), "total": total})
+    for item in weekly_revenue:
+        if max_total:
+            item["percent"] = float((item["total"] / max_total) * Decimal("100"))
+        else:
+            item["percent"] = 0
 
     context = {
         "orders_today": orders_today.count(),
@@ -65,6 +102,7 @@ def dashboard(request):
         "top_books": top_books,
         "top_customers": top_customers,
         "courier_stats": courier_stats,
+        "weekly_revenue": weekly_revenue,
     }
     return render(request, "crm/dashboard.html", context)
 
@@ -79,6 +117,9 @@ def _format_money(value) -> str:
 
 @staff_member_required
 def export_orders_pdf(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     orders = (
         Order.objects.select_related("customer", "courier")
         .order_by("-created_at")[:2000]
@@ -105,6 +146,9 @@ def export_orders_pdf(request):
 
 @staff_member_required
 def export_sales_pdf(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     items = (
         OrderItem.objects.select_related("book", "order")
         .order_by("-order__created_at")[:4000]
@@ -131,6 +175,9 @@ def export_sales_pdf(request):
 
 @staff_member_required
 def export_report_pdf(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     orders = Order.objects.select_related("customer", "courier").order_by("-created_at")[:2000]
     items = OrderItem.objects.select_related("book", "order").order_by("-order__created_at")[:4000]
 
@@ -144,7 +191,7 @@ def export_report_pdf(request):
                 text = text[: inner_width - 3] + "..."
         return f" {text.ljust(inner_width)} "
 
-    widths = [8, 6, 12, 20, 6, 10, 10, 12]
+    widths = [12, 8, 22, 40, 6, 16, 16, 18]
     headers = ["Turi", "ID", "Mijoz", "Kitob", "Soni", "Tel", "Summa", "Status"]
 
     def _border() -> str:
@@ -189,6 +236,9 @@ def export_report_pdf(request):
 
 @staff_member_required
 def orders_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     status_filter = request.GET.get("status") or ""
     orders = Order.objects.select_related("customer", "courier").prefetch_related("items__book")
     if status_filter:
@@ -225,12 +275,18 @@ def orders_list(request):
 
 @staff_member_required
 def customers_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     customers = Customer.objects.all().order_by("-last_order_at")[:200]
     return render(request, "crm/customers.html", {"customers": customers})
 
 
 @staff_member_required
 def customer_detail(request, customer_id: int):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     customer = get_object_or_404(Customer, id=customer_id)
     orders = Order.objects.filter(customer=customer).order_by("-created_at")
     return render(request, "crm/customer_detail.html", {"customer": customer, "orders": orders})
@@ -238,6 +294,9 @@ def customer_detail(request, customer_id: int):
 
 @staff_member_required
 def couriers_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     couriers = Courier.objects.all()
     courier_stats = (
         Order.objects.filter(courier__isnull=False)
@@ -250,6 +309,9 @@ def couriers_list(request):
 
 @staff_member_required
 def inventory_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     if request.method == "POST":
         book_id = request.POST.get("book_id")
         delta_raw = request.POST.get("delta", "0")
@@ -340,6 +402,9 @@ def pos_checkout(request):
 
 @staff_member_required
 def cleanup_data(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
     if request.method != "POST":
         return redirect("crm_dashboard")
     try:

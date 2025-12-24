@@ -17,6 +17,11 @@
     .crm-kpi { font-size:24px; font-weight:800; }
     .crm-pill { display:inline-flex; align-items:center; gap:6px; background:#ecf2ff; color:#1e3a8a; padding:6px 10px; border-radius:999px; font-weight:600; }
     .crm-table th { font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; }
+    @media (max-width: 576px) {
+      .kpi-card { padding:12px !important; }
+      .kpi-card .text-muted { font-size:11px; }
+      .crm-kpi { font-size:18px; }
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>

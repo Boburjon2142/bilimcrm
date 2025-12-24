@@ -2,12 +2,12 @@ from io import BytesIO
 from textwrap import wrap
 
 
-PAGE_WIDTH = 595
-PAGE_HEIGHT = 842
-MARGIN_X = 40
-MARGIN_Y = 50
+PAGE_WIDTH = 842
+PAGE_HEIGHT = 595
+MARGIN_X = 10
+MARGIN_Y = 40
 LINE_HEIGHT = 14
-MAX_CHARS = 120
+MAX_CHARS = 150
 
 
 def _escape(text: str) -> str:
@@ -71,7 +71,7 @@ def build_pdf(lines):
     objects = []
 
     # 1: font
-    objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
 
     # 2..: content + page pairs
     for idx, page_lines in enumerate(pages or [[""]], start=1):

@@ -111,10 +111,31 @@
     const minusBtn = document.getElementById("qty-minus");
     const plusBtn = document.getElementById("qty-plus");
     if (!input || !form) return;
+    let submitting = false;
+    const BARCODE_LEN = 13;
+
+    function submitBarcode() {
+      if (submitting) return;
+      submitting = true;
+      form.submit();
+    }
+
+    input.focus();
+    input.select();
     input.addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         e.preventDefault();
-        form.submit();
+        submitBarcode();
+      }
+    });
+    input.addEventListener("input", function() {
+      const digits = input.value.replace(/\D/g, "");
+      if (digits !== input.value) {
+        input.value = digits;
+      }
+      if (digits.length >= BARCODE_LEN) {
+        input.value = digits.slice(0, BARCODE_LEN);
+        submitBarcode();
       }
     });
 

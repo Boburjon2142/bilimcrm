@@ -90,9 +90,33 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
+    @staticmethod
+    def _ean13_check_digit(number12: str) -> str:
+        total = 0
+        for index, ch in enumerate(number12):
+            digit = int(ch)
+            total += digit * 3 if (index % 2) else digit
+        return str((10 - (total % 10)) % 10)
+
+    @classmethod
+    def generate_barcode_from_id(cls, book_id: int) -> str:
+        prefix = "200"
+        body = str(book_id % 1_000_000_000).zfill(9)
+        base = f"{prefix}{body}"
+        return f"{base}{cls._ean13_check_digit(base)}"
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
+        is_new = self.pk is None
+        if is_new:
+            super().save(*args, **kwargs)
+            if not self.barcode:
+                self.barcode = self.generate_barcode_from_id(self.id)
+                super().save(update_fields=["barcode"])
+            return
+        if not self.barcode:
+            self.barcode = self.generate_barcode_from_id(self.id)
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
