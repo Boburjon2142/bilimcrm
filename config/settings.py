@@ -166,9 +166,19 @@ else:
     }
 
 # --- Security ---
-SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "True").lower() == "true"
-SESSION_COOKIE_SECURE = os.getenv("DJANGO_SESSION_COOKIE_SECURE", "True").lower() == "true"
-CSRF_COOKIE_SECURE = os.getenv("DJANGO_CSRF_COOKIE_SECURE", "True").lower() == "true"
+_secure_ssl_redirect = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "True").lower() == "true"
+_session_cookie_secure = os.getenv("DJANGO_SESSION_COOKIE_SECURE", "True").lower() == "true"
+_csrf_cookie_secure = os.getenv("DJANGO_CSRF_COOKIE_SECURE", "True").lower() == "true"
+
+# Disable HTTPS-only settings in DEBUG to avoid local SSL redirect issues.
+if DEBUG:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    SECURE_SSL_REDIRECT = _secure_ssl_redirect
+    SESSION_COOKIE_SECURE = _session_cookie_secure
+    CSRF_COOKIE_SECURE = _csrf_cookie_secure
 # Disable HSTS to avoid browser HTTPS pinning in local/dev; enable in prod if needed.
 SECURE_HSTS_SECONDS = 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False

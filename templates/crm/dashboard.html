@@ -81,25 +81,25 @@
 
 <div class="row g-2 g-md-4 mb-4 kpi-grid">
   <div class="col-6 col-md-3">
-    <div class="card crm-card p-3 kpi-card">
+    <div class="card crm-card p-3 kpi-card kpi-amber">
       <div class="text-muted small">Bugungi buyurtmalar</div>
       <div class="crm-kpi">{{ orders_today }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card crm-card p-3 kpi-card">
+    <div class="card crm-card p-3 kpi-card kpi-green">
       <div class="text-muted small">Bugungi tushum</div>
       <div class="crm-kpi">{{ revenue_today|floatformat:0|intcomma }} so'm</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card crm-card p-3 kpi-card">
+    <div class="card crm-card p-3 kpi-card kpi-blue">
       <div class="text-muted small">Jami buyurtmalar</div>
       <div class="crm-kpi">{{ total_orders }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card crm-card p-3 kpi-card">
+    <div class="card crm-card p-3 kpi-card kpi-lilac">
       <div class="text-muted small">Jami tushum</div>
       <div class="crm-kpi">{{ total_revenue|floatformat:0|intcomma }} so'm</div>
     </div>
