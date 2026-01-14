@@ -132,7 +132,7 @@ def send_order_created(order_id: int) -> None:
     lines.append("<b>Mahsulotlar:</b>")
     for item in order.items.all():
         title = getattr(item.book, "title", str(item.book))
-        lines.append(f"- {e(title)} x{item.quantity} = {e(f'{item.line_total():.2f}')}")
+        lines.append(f"- {e(title)} x{item.quantity} = {e(_format_money_uzs(item.line_total()))}")
     lines.append("")
 
     lines.append(label("To‘lov", e(order.get_payment_type_display())))

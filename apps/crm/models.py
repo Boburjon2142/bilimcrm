@@ -93,6 +93,7 @@ class Debt(models.Model):
     full_name = models.CharField("F.I.Sh", max_length=255)
     phone = models.CharField("Telefon", max_length=50, blank=True)
     amount = models.DecimalField("Qarz summasi", max_digits=12, decimal_places=2)
+    paid_amount = models.DecimalField("To'langan summa", max_digits=12, decimal_places=2, default=0)
     note = models.TextField("Izoh", blank=True)
     is_paid = models.BooleanField("Yopildi", default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -104,3 +105,10 @@ class Debt(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.amount})"
+
+    def remaining_amount(self):
+        if self.is_paid:
+            return 0
+        paid = self.paid_amount or 0
+        remaining = self.amount - paid
+        return remaining if remaining > 0 else 0

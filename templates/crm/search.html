@@ -1,0 +1,185 @@
+{% extends "crm/base.html" %}
+{% load humanize crm_extras %}
+
+{% block title %}Qidiruv{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h4 class="mb-0">Qidiruv natijalari</h4>
+  {% if query %}
+  <span class="crm-pill">"{{ query }}"</span>
+  {% endif %}
+</div>
+
+{% if not query %}
+<div class="card crm-card p-4 text-center">
+  <div class="text-muted">Qidirish uchun so'z kiriting.</div>
+</div>
+{% else %}
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Buyurtmalar</div>
+      {% for order in results.orders %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>#{{ order.id }} · {{ order.full_name }}</div>
+        <div class="text-muted">{{ order.phone|phone }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Mijozlar</div>
+      {% for customer in results.customers %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>{{ customer.full_name }}</div>
+        <div class="text-muted">{{ customer.phone|phone }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Kuryerlar</div>
+      {% for courier in results.couriers %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>{{ courier.name }}</div>
+        <div class="text-muted">{{ courier.phone|phone|default:"-" }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Kitoblar</div>
+      {% for book in results.books %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>{{ book.title }}</div>
+        <div class="text-muted">{{ book.author.name }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Kategoriyalar</div>
+      {% for category in results.categories %}
+      <div class="border-bottom py-2">{{ category.name }}</div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Mualliflar</div>
+      {% for author in results.authors %}
+      <div class="border-bottom py-2">{{ author.name }}</div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Chiqimlar</div>
+      {% for expense in results.expenses %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>{{ expense.title }}</div>
+        <div class="text-muted">{{ expense.amount|floatformat:0|intcomma }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Qarzlar</div>
+      {% for debt in results.debts %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>{{ debt.full_name }}</div>
+        <div class="text-muted">{{ debt.amount|floatformat:0|intcomma }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Ombor yozuvlari</div>
+      {% for log in results.inventory_logs %}
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>{{ log.book.title }}</div>
+        <div class="text-muted">{{ log.delta|intcomma }}</div>
+      </div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Yetkazib berish eslatmalari</div>
+      {% for notice in results.delivery_notices %}
+      <div class="border-bottom py-2">{{ notice.title }}</div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Yetkazib berish zonalari</div>
+      {% for zone in results.delivery_zones %}
+      <div class="border-bottom py-2">{{ zone.name }}</div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Bannerlar</div>
+      {% for banner in results.banners %}
+      <div class="border-bottom py-2">{{ banner.title|default:"Banner" }}</div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card crm-card p-3">
+      <div class="fw-semibold mb-2">Biz haqimizda</div>
+      {% for page in results.about_pages %}
+      <div class="border-bottom py-2">{{ page.title }}</div>
+      {% empty %}
+      <div class="text-muted">Topilmadi</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

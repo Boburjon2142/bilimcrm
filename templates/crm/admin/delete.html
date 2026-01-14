@@ -1,0 +1,15 @@
+{% extends "crm/base.html" %}
+
+{% block title %}O'chirish{% endblock %}
+
+{% block content %}
+<div class="card crm-card p-4">
+  <h5 class="mb-3">O'chirishni tasdiqlang</h5>
+  <p class="mb-4">Rostdan ham <strong>{{ object }}</strong> ni o'chirmoqchimisiz?</p>
+  <form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">O'chirish</button>
+    <a class="btn btn-outline-secondary" href="{% url 'crm_admin_list' app_label model_name %}">Bekor qilish</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "crm/base.html" %}
-{% load humanize %}
+{% load humanize crm_extras %}
 
 {% block title %}Mijoz{% endblock %}
 
@@ -7,11 +7,11 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <div>
     <h4 class="mb-1">{{ customer.full_name }}</h4>
-    <div class="text-muted">{{ customer.phone }}</div>
+    <div class="text-muted">{{ customer.phone|phone }}</div>
   </div>
   <div class="crm-pill">Chegirma: {{ customer.discount_percent }}%</div>
   <div class="crm-pill">LTV: {{ customer.total_spent|floatformat:0|intcomma }} so'm</div>
-  <div class="crm-pill">Buyurtmalar: {{ customer.orders_count }}</div>
+  <div class="crm-pill">Buyurtmalar: {{ customer.orders_count|intcomma }}</div>
 </div>
 
 <div class="card crm-card p-3">

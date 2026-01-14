@@ -1,11 +1,12 @@
 {% extends "crm/base.html" %}
+{% load humanize %}
 
 {% block title %}Ombor{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <h4 class="mb-0">Ombor nazorati</h4>
-  <span class="crm-pill">Kitoblar: {{ books|length }}</span>
+  <span class="crm-pill">Kitoblar: {{ books|length|intcomma }}</span>
 </div>
 
 <div class="card crm-card p-3 mb-4">
@@ -47,7 +48,7 @@
       <tr>
         <td>{{ book.title }}</td>
         <td>{{ book.barcode|default:"—" }}</td>
-        <td class="text-end">{{ book.stock_quantity }}</td>
+        <td class="text-end">{{ book.stock_quantity|intcomma }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="3" class="text-muted">Kitoblar yo'q</td></tr>

@@ -263,13 +263,13 @@
         <a href="{% url 'crm_orders' %}"><i class="bi bi-receipt"></i> Buyurtmalar</a>
         <a href="{% url 'crm_inventory' %}"><i class="bi bi-box"></i> Mahsulotlar</a>
         <a href="{% url 'crm_report' %}"><i class="bi bi-bar-chart"></i> Hisobot</a>
-        <a href="{% url 'crm_customers' %}"><i class="bi bi-people"></i> Mijozlar</a>
-        <a href="{% url 'crm_couriers' %}"><i class="bi bi-truck"></i> Kuryerlar</a>
+        <a href="{% url 'crm_prices' %}"><i class="bi bi-tags"></i> Narxlar</a>
+        <a href="{% url 'crm_expenses' %}"><i class="bi bi-cash-coin"></i> Chiqimlar</a>
+        <a href="{% url 'crm_debts' %}"><i class="bi bi-wallet2"></i> Qarzdorlar</a>
         <a href="{% url 'crm_pos' %}"><i class="bi bi-cash-coin"></i> POS</a>
-        <a href="{% url 'home' %}"><i class="bi bi-shop"></i> Saytga qaytish</a>
       </nav>
       <div class="crm-sidebar-footer">
-        <a class="crm-menu-link" href="{% url 'crm_inventory' %}"><i class="bi bi-gear"></i> Settings</a>
+        <a class="crm-menu-link" href="{% url 'crm_entry' %}"><i class="bi bi-gear"></i> Kiritish</a>
       </div>
     </aside>
 
@@ -278,23 +278,11 @@
         <button class="crm-icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#crmSidebar" aria-controls="crmSidebar">
           <i class="bi bi-list"></i>
         </button>
-        <div class="crm-search">
+        <form class="crm-search" action="{% url 'crm_search' %}" method="get">
           <i class="bi bi-search"></i>
-          <input type="search" placeholder="Search">
-        </div>
-        <div class="crm-actions">
-          <button class="crm-icon-btn" type="button"><i class="bi bi-bell"></i></button>
-          <button class="crm-icon-btn" type="button"><i class="bi bi-gear"></i></button>
-          <div class="dropdown">
-            <button class="crm-user dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              admin
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="{% url 'crm_dashboard' %}">Dashboard</a></li>
-              <li><a class="dropdown-item" href="{% url 'home' %}">Saytga qaytish</a></li>
-            </ul>
-          </div>
-        </div>
+          <input type="search" name="q" placeholder="Search" value="{{ request.GET.q|default:'' }}">
+        </form>
+        <div class="crm-actions"></div>
       </header>
 
       <main class="crm-content">
@@ -326,14 +314,46 @@
         <a href="{% url 'crm_orders' %}"><i class="bi bi-receipt"></i> Buyurtmalar</a>
         <a href="{% url 'crm_inventory' %}"><i class="bi bi-box"></i> Mahsulotlar</a>
         <a href="{% url 'crm_report' %}"><i class="bi bi-bar-chart"></i> Hisobot</a>
-        <a href="{% url 'crm_customers' %}"><i class="bi bi-people"></i> Mijozlar</a>
-        <a href="{% url 'crm_couriers' %}"><i class="bi bi-truck"></i> Kuryerlar</a>
+        <a href="{% url 'crm_prices' %}"><i class="bi bi-tags"></i> Narxlar</a>
+        <a href="{% url 'crm_expenses' %}"><i class="bi bi-cash-coin"></i> Chiqimlar</a>
+        <a href="{% url 'crm_debts' %}"><i class="bi bi-wallet2"></i> Qarzdorlar</a>
         <a href="{% url 'crm_pos' %}"><i class="bi bi-cash-coin"></i> POS</a>
-        <a href="{% url 'home' %}"><i class="bi bi-shop"></i> Saytga qaytish</a>
       </nav>
     </div>
   </div>
 
+  <script>
+    (function () {
+      function normalizeMoney(value) {
+        return (value || "").toString().replace(/[^\d]/g, "");
+      }
+
+      function formatMoney(value) {
+        var digits = normalizeMoney(value);
+        if (!digits) return "";
+        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      }
+
+      function formatInput(el) {
+        el.value = formatMoney(el.value);
+      }
+
+      document.querySelectorAll("input[data-money]").forEach(function (el) {
+        formatInput(el);
+        el.addEventListener("input", function () {
+          formatInput(el);
+        });
+      });
+
+      document.querySelectorAll("form").forEach(function (form) {
+        form.addEventListener("submit", function () {
+          form.querySelectorAll("input[data-money]").forEach(function (el) {
+            el.value = normalizeMoney(el.value);
+          });
+        });
+      });
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   {% block extra_js %}{% endblock %}
 </body>

@@ -25,21 +25,6 @@
   .range-tab.active { background:#2563eb; color:#fff; }
   .section-title { font-weight:700; color:#1f2937; }
   .crm-section-link { font-size:13px; color:#1e3a8a; text-decoration:none; font-weight:600; }
-  .report-form .form-control { border-radius:12px; }
-  .report-form button { border-radius:12px; }
-  .report-list { background:#fff; border:1px solid #e5e7eb; border-radius:16px; }
-  .expense-strip { display:flex; gap:12px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -ms-overflow-style:none; scrollbar-width:none; }
-  .expense-strip::-webkit-scrollbar { display:none; }
-  .expense-card { flex:0 0 auto; width:220px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px; scroll-snap-align:start; box-shadow:0 8px 16px rgba(15,23,42,0.06); }
-  .expense-title { font-weight:700; font-size:14px; color:#111827; margin-bottom:6px; }
-  .expense-meta { font-size:12px; color:#64748b; }
-  .expense-amount { font-size:15px; font-weight:700; color:#b91c1c; }
-  .debt-strip { display:flex; gap:12px; overflow-x:auto; padding:6px 2px 8px; scroll-snap-type:x mandatory; -ms-overflow-style:none; scrollbar-width:none; }
-  .debt-strip::-webkit-scrollbar { display:none; }
-  .debt-card { flex:0 0 auto; width:220px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px; scroll-snap-align:start; box-shadow:0 8px 16px rgba(15,23,42,0.06); }
-  .debt-title { font-weight:700; font-size:14px; color:#111827; margin-bottom:6px; }
-  .debt-meta { font-size:12px; color:#64748b; }
-  .debt-amount { font-size:15px; font-weight:700; color:#b91c1c; }
   @media (max-width: 576px) {
     .report-header h4 { font-size:26px; }
     .report-kpi { font-size:20px; }
@@ -111,78 +96,6 @@
       <div class="report-card p-3">
         <div class="text-muted small">Qoldiq</div>
         <div class="report-kpi">{{ net_total|floatformat:0|intcomma }} so'm</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3">
-    <div class="col-12 col-lg-5">
-      <div class="report-card p-3">
-        <div class="section-title mb-2">Chiqim qo'shish</div>
-        <form method="post" class="d-grid gap-2 report-form">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="expense">
-          <input class="form-control" type="text" name="title" placeholder="Sarlavha" required>
-          <input class="form-control" type="number" name="amount" step="0.01" placeholder="Summa" required>
-          <input class="form-control" type="date" name="spent_on">
-          <textarea class="form-control" name="note" rows="2" placeholder="Izoh (ixtiyoriy)"></textarea>
-          <button class="btn btn-danger" type="submit">Chiqimni saqlash</button>
-        </form>
-      </div>
-    </div>
-    <div class="col-12 col-lg-7">
-      <div class="report-card p-3 report-list">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="section-title">Chiqimlar ro'yxati</div>
-          <a class="crm-section-link" href="{% url 'crm_expenses' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-        </div>
-        <div class="expense-strip">
-          {% for expense in expenses %}
-          <div class="expense-card">
-            <div class="expense-title">{{ expense.title }}</div>
-            <div class="expense-meta">{{ expense.spent_on|date:"Y-m-d" }}</div>
-            <div class="expense-amount mt-2">{{ expense.amount|floatformat:0|intcomma }} so'm</div>
-          </div>
-          {% empty %}
-          <div class="text-muted">Chiqimlar yo'q</div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mt-1">
-    <div class="col-12 col-lg-5">
-      <div class="report-card p-3">
-        <div class="section-title mb-2">Qarz qo'shish</div>
-        <form method="post" class="d-grid gap-2 report-form">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="debt">
-          <input class="form-control" type="text" name="title" placeholder="F.I.Sh" required>
-          <input class="form-control" type="text" name="phone" placeholder="Telefon (ixtiyoriy)">
-          <input class="form-control" type="number" name="amount" step="0.01" placeholder="Qarz summasi" required>
-          <textarea class="form-control" name="note" rows="2" placeholder="Izoh (ixtiyoriy)"></textarea>
-          <button class="btn btn-danger" type="submit">Qarzni saqlash</button>
-        </form>
-      </div>
-    </div>
-    <div class="col-12 col-lg-7">
-      <div class="report-card p-3 report-list">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="section-title">Qarzdorlar ro'yxati</div>
-          <a class="crm-section-link" href="{% url 'crm_debts' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-        </div>
-        <div class="debt-strip">
-          {% for debt in debts %}
-          <div class="debt-card">
-            <div class="debt-title">{{ debt.full_name }}</div>
-            <div class="debt-meta">{{ debt.phone|default:"-" }}</div>
-            <div class="debt-amount mt-2">{{ debt.amount|floatformat:0|intcomma }} so'm</div>
-          </div>
-          {% empty %}
-          <div class="text-muted">Qarzdorlar yo'q</div>
-          {% endfor %}
-        </div>
       </div>
     </div>
   </div>

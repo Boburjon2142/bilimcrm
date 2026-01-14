@@ -1,0 +1,56 @@
+{% extends "crm/base.html" %}
+{% load humanize %}
+
+{% block title %}Narxlar{% endblock %}
+
+{% block extra_css %}
+<style>
+  .prices-page { max-width:1100px; margin:0 auto; }
+  .prices-header h4 { font-size:30px; font-weight:800; color:#1f2937; }
+  .prices-card { border-radius:18px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 12px 22px rgba(16,42,67,0.08); }
+  .prices-table th { font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; }
+  @media (max-width: 576px) {
+    .prices-header h4 { font-size:24px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prices-page">
+  <div class="prices-header mb-3">
+    <h4 class="mb-1">Narxlar</h4>
+  </div>
+
+  <div class="mb-3">
+    <form method="get" class="crm-search">
+      <i class="bi bi-search"></i>
+      <input type="search" name="q" placeholder="Mahsulot qidirish" value="{{ query|default:'' }}">
+    </form>
+  </div>
+
+  <div class="prices-card p-3">
+    <div class="table-responsive">
+      <table class="table prices-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Mahsulot</th>
+            <th class="text-end">Sotib olish</th>
+            <th class="text-end">Sotish</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+          <tr>
+            <td>{{ book.title }}</td>
+            <td class="text-end">{{ book.purchase_price|floatformat:0|intcomma }}</td>
+            <td class="text-end">{{ book.sale_price|floatformat:0|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-muted">Ma'lumot yo'q</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

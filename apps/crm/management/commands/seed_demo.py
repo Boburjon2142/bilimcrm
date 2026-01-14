@@ -33,12 +33,12 @@ def _ensure_count(model, target, factory):
 
 
 class Command(BaseCommand):
-    help = "Seed demo data for all models (4 per model) for local/dev usage."
+    help = "Seed demo data for all models (5 per model) for local/dev usage."
 
     def handle(self, *args, **options):
         _ensure_count(
             Author,
-            4,
+            5,
             lambda idx, offset: Author.objects.create(
                 name=f"Muallif {idx + 1}",
                 bio="Demo muallif.",
@@ -48,19 +48,19 @@ class Command(BaseCommand):
 
         _ensure_count(
             Category,
-            4,
+            5,
             lambda idx, offset: Category.objects.create(
                 name=f"Kategoriya {idx + 1}",
                 slug=f"kategoriya-{idx + 1}",
             ),
         )
 
-        categories = list(Category.objects.all()[:4])
-        authors = list(Author.objects.all()[:4])
+        categories = list(Category.objects.all()[:5])
+        authors = list(Author.objects.all()[:5])
 
         _ensure_count(
             Book,
-            4,
+            5,
             lambda idx, offset: Book.objects.create(
                 title=f"Kitob {idx + 1}",
                 slug=f"kitob-{idx + 1}",
@@ -76,11 +76,11 @@ class Command(BaseCommand):
             ),
         )
 
-        books = list(Book.objects.all()[:4])
+        books = list(Book.objects.all()[:5])
 
         _ensure_count(
             FeaturedCategory,
-            4,
+            5,
             lambda idx, offset: FeaturedCategory.objects.create(
                 category=categories[idx % len(categories)],
                 title=f"Featured {idx + 1}",
@@ -92,7 +92,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             Banner,
-            4,
+            5,
             lambda idx, offset: Banner.objects.create(
                 title=f"Banner {idx + 1}",
                 image=_make_image_file(f"banner-{idx + 1}.png"),
@@ -104,7 +104,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             AboutPage,
-            4,
+            5,
             lambda idx, offset: AboutPage.objects.create(
                 title=f"Biz haqimizda {idx + 1}",
                 body="Demo matn.",
@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             Customer,
-            4,
+            5,
             lambda idx, offset: Customer.objects.create(
                 full_name=f"Mijoz {idx + 1}",
                 phone=f"+99890{1000000 + idx:07d}",
@@ -132,7 +132,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             Courier,
-            4,
+            5,
             lambda idx, offset: Courier.objects.create(
                 name=f"Kuryer {idx + 1}",
                 phone=f"+99893{2000000 + idx:07d}",
@@ -142,12 +142,12 @@ class Command(BaseCommand):
             ),
         )
 
-        customers = list(Customer.objects.all()[:4])
-        couriers = list(Courier.objects.all()[:4])
+        customers = list(Customer.objects.all()[:5])
+        couriers = list(Courier.objects.all()[:5])
 
         _ensure_count(
             Order,
-            4,
+            5,
             lambda idx, offset: Order.objects.create(
                 full_name=customers[idx % len(customers)].full_name,
                 phone=customers[idx % len(customers)].phone,
@@ -166,11 +166,11 @@ class Command(BaseCommand):
             ),
         )
 
-        orders = list(Order.objects.all()[:4])
+        orders = list(Order.objects.all()[:5])
 
         _ensure_count(
             OrderItem,
-            4,
+            5,
             lambda idx, offset: OrderItem.objects.create(
                 order=orders[idx % len(orders)],
                 book=books[idx % len(books)],
@@ -191,7 +191,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             InventoryLog,
-            4,
+            5,
             lambda idx, offset: InventoryLog.objects.create(
                 book=books[idx % len(books)],
                 delta=randint(-3, 12),
@@ -203,7 +203,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             Expense,
-            4,
+            5,
             lambda idx, offset: Expense.objects.create(
                 title=f"Chiqim {idx + 1}",
                 amount=randint(50000, 300000),
@@ -214,7 +214,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             Debt,
-            4,
+            5,
             lambda idx, offset: Debt.objects.create(
                 full_name=f"Qarzdor {idx + 1}",
                 phone=f"+99891{3000000 + idx:07d}",
@@ -226,7 +226,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             DeliveryZone,
-            4,
+            5,
             lambda idx, offset: DeliveryZone.objects.create(
                 name=f"Zona {idx + 1}",
                 mode="CIRCLE",
@@ -239,7 +239,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             DeliveryNotice,
-            4,
+            5,
             lambda idx, offset: DeliveryNotice.objects.create(
                 title=f"Yetkazib berish eslatma {idx + 1}",
                 body="Demo yetkazib berish xabari.",
@@ -249,7 +249,7 @@ class Command(BaseCommand):
 
         _ensure_count(
             DeliverySettings,
-            4,
+            5,
             lambda idx, offset: DeliverySettings.objects.create(
                 base_fee_uzs=10000 + idx * 1000,
                 per_km_fee_uzs=2000,

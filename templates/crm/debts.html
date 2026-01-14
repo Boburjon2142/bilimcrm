@@ -1,5 +1,5 @@
 {% extends "crm/base.html" %}
-{% load humanize %}
+{% load humanize crm_extras %}
 
 {% block title %}Qarzdorlar{% endblock %}
 
@@ -9,6 +9,9 @@
   .debts-header h4 { font-size:30px; font-weight:800; color:#1f2937; }
   .debts-card { border-radius:18px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 12px 22px rgba(16,42,67,0.08); }
   .debts-table th { font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; }
+  .debts-form .form-control { border-radius:12px; }
+  .debts-form button { border-radius:12px; }
+  .debt-edit-input { min-width: 110px; }
   @media (max-width: 576px) {
     .debts-header h4 { font-size:24px; }
   }
@@ -21,34 +24,87 @@
     <h4 class="mb-1">Qarzdorlar</h4>
   </div>
 
-  <div class="debts-card p-3">
-    <div class="table-responsive">
-      <table class="table debts-table align-middle mb-0">
-        <thead>
-          <tr>
-            <th>F.I.Sh</th>
-            <th>Telefon</th>
-            <th>Izoh</th>
-            <th class="text-end">Qarz</th>
-            <th class="text-end">Holat</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for debt in debts %}
-          <tr>
-            <td>{{ debt.full_name }}</td>
-            <td>{{ debt.phone|default:"-" }}</td>
-            <td>{{ debt.note|default:"-" }}</td>
-            <td class="text-end">{{ debt.amount|floatformat:0|intcomma }}</td>
-            <td class="text-end">
-              {% if debt.is_paid %}Yopildi{% else %}Qoldi{% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="5" class="text-muted">Qarzdorlar yo'q</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="row g-3">
+    <div class="col-12 col-lg-4">
+      <div class="debts-card p-3">
+        <div class="fw-semibold mb-2">Qarz qo'shish</div>
+        <form method="post" class="d-grid gap-2 debts-form">
+          {% csrf_token %}
+          <input class="form-control" type="text" name="full_name" placeholder="F.I.Sh" required>
+          <input class="form-control" type="text" name="phone" placeholder="Telefon (ixtiyoriy)">
+          <input class="form-control" type="text" name="amount" inputmode="numeric" pattern="[0-9 ]+" data-money placeholder="Qarz summasi" required>
+          <textarea class="form-control" name="note" rows="2" placeholder="Izoh (ixtiyoriy)"></textarea>
+          <button class="btn btn-danger" type="submit">Qarzni saqlash</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-12 col-lg-8">
+      <div class="debts-card p-3">
+        <div class="table-responsive">
+          <table class="table debts-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>F.I.Sh</th>
+                <th>Telefon</th>
+                <th>Izoh</th>
+                <th class="text-end">Qarz</th>
+                <th class="text-end">To'langan</th>
+                <th class="text-end">Qoldiq</th>
+                <th class="text-end">Holat</th>
+                <th class="text-end">Amal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for debt in debts %}
+              <form id="debt-form-{{ debt.id }}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="debt_id" value="{{ debt.id }}">
+              </form>
+              <tr>
+                <td>{{ debt.full_name }}</td>
+                <td>{{ debt.phone|phone|default:"-" }}</td>
+                <td>{{ debt.note|default:"-" }}</td>
+                <td class="text-end">{{ debt.amount|floatformat:0|intcomma }}</td>
+                <td class="text-end">
+                  <input
+                    form="debt-form-{{ debt.id }}"
+                    class="form-control form-control-sm text-end debt-edit-input"
+                    type="text"
+                    name="paid_amount"
+                    inputmode="numeric"
+                    pattern="[0-9 ]+"
+                    data-money
+                    value="{% if debt.is_paid %}{{ debt.amount|floatformat:0|intcomma }}{% else %}{{ debt.paid_amount|floatformat:0|intcomma }}{% endif %}"
+                  >
+                </td>
+                <td class="text-end">{{ debt.remaining_amount|floatformat:0|intcomma }}</td>
+                <td class="text-end">
+                  <div class="form-check form-switch d-inline-flex align-items-center gap-2">
+                    <input
+                      form="debt-form-{{ debt.id }}"
+                      class="form-check-input"
+                      type="checkbox"
+                      name="is_paid"
+                      value="1"
+                      {% if debt.is_paid %}checked{% endif %}
+                    >
+                    <span class="small">{% if debt.is_paid %}Yopildi{% else %}Qoldi{% endif %}</span>
+                  </div>
+                </td>
+                <td class="text-end">
+                  <button form="debt-form-{{ debt.id }}" class="btn btn-sm btn-outline-primary" type="submit">
+                    Saqlash
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="text-muted">Qarzdorlar yo'q</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>

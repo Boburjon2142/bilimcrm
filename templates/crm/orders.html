@@ -1,5 +1,5 @@
-{% extends "crm/base.html" %}
-{% load humanize %}
+﻿{% extends "crm/base.html" %}
+{% load humanize crm_extras %}
 
 {% block title %}Buyurtmalar{% endblock %}
 
@@ -12,12 +12,6 @@
     .crm-orders tr { border:1px solid #e6e6e6; border-radius:12px; padding:10px 12px; margin-bottom:12px; background:#fff; }
     .crm-orders td { border:0; padding:6px 0; display:flex; justify-content:space-between; gap:12px; }
     .crm-orders td::before { content: attr(data-label); font-weight:600; color:#64748b; }
-    .crm-orders .actions-cell { padding-top:10px; }
-    .crm-orders .actions-cell::before { content: "Amal"; }
-    .crm-orders .actions-cell form { width:100%; }
-    .crm-orders .actions-cell select,
-    .crm-orders .actions-cell button { width:100%; }
-    .crm-orders .actions-cell .mt-2 { margin-top:8px !important; }
   }
 </style>
 {% endblock %}
@@ -48,9 +42,6 @@
         <th>Telefon</th>
         <th>Summa</th>
         <th>Kanal</th>
-        <th>Status</th>
-        <th>Kuryer</th>
-        <th>Amal</th>
       </tr>
     </thead>
     <tbody>
@@ -58,34 +49,15 @@
       <tr>
         <td data-label="ID">#{{ order.id }}</td>
         <td data-label="Mijoz">{{ order.full_name }}</td>
-        <td data-label="Telefon">{{ order.phone }}</td>
+        <td data-label="Telefon">{{ order.phone|phone }}</td>
         <td data-label="Summa">{{ order.total_price|floatformat:0|intcomma }}</td>
         <td data-label="Kanal">{{ order.get_order_source_display }}</td>
-        <td data-label="Status">{{ order.get_status_display }}</td>
-        <td data-label="Kuryer">{{ order.courier|default:"—" }}</td>
-        <td class="actions-cell">
-          {% if order.order_source != "pos" %}
-          <form method="post" class="d-flex flex-wrap gap-2 mt-2">
-            {% csrf_token %}
-            <input type="hidden" name="order_id" value="{{ order.id }}">
-            <input type="hidden" name="action" value="assign">
-            <select name="courier_id" class="form-select form-select-sm">
-              <option value="">Kuryer tanlang</option>
-              {% for courier in couriers %}
-              <option value="{{ courier.id }}">{{ courier.name }}</option>
-              {% endfor %}
-            </select>
-            <button class="btn btn-sm btn-outline-success" type="submit">Biriktirish</button>
-          </form>
-          {% else %}
-          <span class="text-muted small">POS (offline)</span>
-          {% endif %}
-        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="8" class="text-muted">Buyurtmalar yo'q</td></tr>
+      <tr><td colspan="5" class="text-muted">Buyurtmalar yo'q</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% endblock %}
+

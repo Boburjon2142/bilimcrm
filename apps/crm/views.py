@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count, Sum, F, DecimalField, ExpressionWrapper
+from django.db.models import Count, Sum, F, Q, DecimalField, ExpressionWrapper
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -25,9 +25,9 @@ def _operator_block(request):
         return HttpResponseForbidden("Operator role has access only to POS.")
     return None
 
-from apps.catalog.models import Book
+from apps.catalog.models import AboutPage, Author, Banner, Book, Category
 from apps.orders.cart import Cart
-from apps.orders.models import Order, OrderItem
+from apps.orders.models import DeliveryNotice, DeliveryZone, Order, OrderItem
 from .models import Courier, Customer, InventoryLog, Expense, Debt
 from .utils.pdf import build_pdf
 
@@ -67,14 +67,6 @@ def dashboard(request):
         .values("book__title")
         .annotate(quantity=Sum("quantity"), revenue=Sum("line_total"))
         .order_by("-quantity")[:8]
-    )
-    top_customers = Customer.objects.order_by("-total_spent")[:8]
-
-    courier_stats = (
-        Order.objects.filter(courier__isnull=False)
-        .values("courier__name")
-        .annotate(total=Count("id"))
-        .order_by("-total")[:8]
     )
     hour_start = 8
     hour_end = 20
@@ -127,6 +119,8 @@ def dashboard(request):
     scale_max = max_total if max_total > 0 else Decimal("1")
     points = []
     dots = []
+    peak_dot = None
+    peak_value = None
     count = len(hourly_income)
     for idx, item in enumerate(hourly_income):
         if count > 1:
@@ -136,7 +130,11 @@ def dashboard(request):
         ratio = float(item["total"] / scale_max) if scale_max else 0.0
         y = padding_top + (plot_height * (1 - ratio))
         points.append(f"{x:.1f},{y:.1f}")
-        dots.append({"x": round(x, 1), "y": round(y, 1), "value": item["total"]})
+        dot = {"x": round(x, 1), "y": round(y, 1), "value": item["total"]}
+        dots.append(dot)
+        if peak_value is None or item["total"] > peak_value:
+            peak_value = item["total"]
+            peak_dot = dot
 
     chart_ticks = []
     for step in range(5):
@@ -151,12 +149,11 @@ def dashboard(request):
         "total_orders": total_orders,
         "total_revenue": total_revenue,
         "top_books": top_books,
-        "top_customers": top_customers,
-        "courier_stats": courier_stats,
         "hourly_data": hourly_data,
         "chart_points": " ".join(points),
         "chart_dots": dots,
         "chart_ticks": chart_ticks,
+        "chart_peak": peak_dot,
     }
     return render(request, "crm/dashboard.html", context)
 
@@ -167,6 +164,16 @@ def _format_money(value) -> str:
     except (TypeError, ValueError):
         return str(value)
     return f"{v:,}".replace(",", " ")
+
+
+def _parse_money(raw: str):
+    cleaned = (raw or "").replace(" ", "").replace(",", "")
+    if not cleaned:
+        return None
+    try:
+        return Decimal(cleaned)
+    except (TypeError, ValueError):
+        return None
 
 
 @staff_member_required
@@ -334,46 +341,6 @@ def monthly_report(request):
     start_dt = timezone.make_aware(start_dt, tz)
     end_dt = timezone.make_aware(end_dt, tz)
 
-    if request.method == "POST":
-        form_type = (request.POST.get("form_type") or "").strip()
-        title = (request.POST.get("title") or "").strip()
-        amount_raw = (request.POST.get("amount") or "").strip()
-        spent_on_raw = (request.POST.get("spent_on") or "").strip()
-        note = (request.POST.get("note") or "").strip()
-        if form_type == "expense" and title and amount_raw:
-            try:
-                amount = Decimal(amount_raw)
-            except (TypeError, ValueError):
-                amount = None
-            if amount is not None:
-                spent_on = today
-                if spent_on_raw:
-                    try:
-                        spent_on = date.fromisoformat(spent_on_raw)
-                    except ValueError:
-                        spent_on = today
-                Expense.objects.create(
-                    title=title,
-                    amount=amount,
-                    spent_on=spent_on,
-                    note=note,
-                )
-                return redirect("crm_report")
-        if form_type == "debt" and title and amount_raw:
-            try:
-                amount = Decimal(amount_raw)
-            except (TypeError, ValueError):
-                amount = None
-            phone = (request.POST.get("phone") or "").strip()
-            if amount is not None:
-                Debt.objects.create(
-                    full_name=title,
-                    phone=phone,
-                    amount=amount,
-                    note=note,
-                )
-                return redirect("crm_report")
-
     income_total = (
         Order.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
         .aggregate(total=Sum("total_price"))
@@ -387,9 +354,6 @@ def monthly_report(request):
         or Decimal("0")
     )
     net_total = income_total - expense_total
-
-    expenses = Expense.objects.filter(spent_on__gte=start_date, spent_on__lte=end_date)[:200]
-    debts = Debt.objects.filter(is_paid=False).order_by("-created_at")[:200]
 
     base_month = start_date
     last_day = calendar.monthrange(base_month.year, base_month.month)[1]
@@ -414,8 +378,6 @@ def monthly_report(request):
             "income_total": income_total,
             "expense_total": expense_total,
             "net_total": net_total,
-            "expenses": expenses,
-            "debts": debts,
             "start_date": start_date,
             "end_date": end_date,
             "start_time": start_time.strftime("%H:%M"),
@@ -430,6 +392,27 @@ def expenses_list(request):
     operator_response = _operator_block(request)
     if operator_response:
         return operator_response
+    if request.method == "POST":
+        title = (request.POST.get("title") or "").strip()
+        amount_raw = (request.POST.get("amount") or "").strip()
+        spent_on_raw = (request.POST.get("spent_on") or "").strip()
+        note = (request.POST.get("note") or "").strip()
+        if title and amount_raw:
+            amount = _parse_money(amount_raw)
+            if amount is not None:
+                spent_on = timezone.localdate()
+                if spent_on_raw:
+                    try:
+                        spent_on = date.fromisoformat(spent_on_raw)
+                    except ValueError:
+                        spent_on = timezone.localdate()
+                Expense.objects.create(
+                    title=title,
+                    amount=amount,
+                    spent_on=spent_on,
+                    note=note,
+                )
+        return redirect("crm_expenses")
     expenses = Expense.objects.all().order_by("-spent_on", "-created_at")[:500]
     return render(request, "crm/expenses.html", {"expenses": expenses})
 
@@ -439,6 +422,46 @@ def debts_list(request):
     operator_response = _operator_block(request)
     if operator_response:
         return operator_response
+    if request.method == "POST":
+        action = (request.POST.get("action") or "create").strip()
+        if action == "update":
+            debt_id = request.POST.get("debt_id")
+            debt = get_object_or_404(Debt, id=debt_id)
+            paid_amount_raw = (request.POST.get("paid_amount") or "").strip()
+            is_paid_flag = request.POST.get("is_paid") == "1"
+            paid_amount = debt.paid_amount
+            if paid_amount_raw:
+                parsed_paid = _parse_money(paid_amount_raw)
+                if parsed_paid is not None:
+                    paid_amount = parsed_paid
+            if paid_amount < 0:
+                paid_amount = Decimal("0")
+            if paid_amount > debt.amount:
+                paid_amount = debt.amount
+            if is_paid_flag:
+                paid_amount = debt.amount
+                is_paid = True
+            else:
+                is_paid = paid_amount >= debt.amount
+            debt.paid_amount = paid_amount
+            debt.is_paid = is_paid
+            debt.save(update_fields=["paid_amount", "is_paid"])
+            return redirect("crm_debts")
+
+        full_name = (request.POST.get("full_name") or "").strip()
+        amount_raw = (request.POST.get("amount") or "").strip()
+        phone = (request.POST.get("phone") or "").strip()
+        note = (request.POST.get("note") or "").strip()
+        if full_name and amount_raw:
+            amount = _parse_money(amount_raw)
+            if amount is not None:
+                Debt.objects.create(
+                    full_name=full_name,
+                    phone=phone,
+                    amount=amount,
+                    note=note,
+                )
+        return redirect("crm_debts")
     debts = Debt.objects.all().order_by("-created_at")[:500]
     return render(request, "crm/debts.html", {"debts": debts})
 
@@ -545,20 +568,12 @@ def orders_list(request):
                 order.status = new_status
                 _set_status_timestamps(order, new_status)
                 order.save(update_fields=["status", "paid_at", "assigned_at", "delivered_at", "canceled_at"])
-        elif action == "assign":
-            courier_id = request.POST.get("courier_id")
-            if courier_id and order.order_source != "pos":
-                order.courier_id = courier_id
-                order.status = "assigned"
-                _set_status_timestamps(order, "assigned")
-                order.save(update_fields=["courier", "status", "assigned_at"])
         return redirect("crm_orders")
 
     context = {
         "orders": orders[:200],
         "status_filter": status_filter,
         "statuses": Order.STATUS_CHOICES,
-        "couriers": Courier.objects.filter(is_active=True),
     }
     return render(request, "crm/orders.html", context)
 
@@ -739,3 +754,151 @@ def cleanup_data(request):
             f"O'chirish uchun mos yozuv topilmadi (>{days} kun).",
         )
     return redirect("crm_dashboard")
+
+
+@staff_member_required
+def search(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
+    query = (request.GET.get("q") or "").strip()
+    results = {
+        "orders": [],
+        "customers": [],
+        "couriers": [],
+        "books": [],
+        "categories": [],
+        "authors": [],
+        "expenses": [],
+        "debts": [],
+        "inventory_logs": [],
+        "delivery_notices": [],
+        "delivery_zones": [],
+        "banners": [],
+        "about_pages": [],
+    }
+
+    if query:
+        order_filter = (
+            Q(full_name__icontains=query)
+            | Q(phone__icontains=query)
+            | Q(address__icontains=query)
+            | Q(address_text__icontains=query)
+            | Q(location__icontains=query)
+            | Q(note__icontains=query)
+        )
+        results["orders"] = Order.objects.filter(order_filter).order_by("-created_at")[:50]
+
+        customer_filter = (
+            Q(full_name__icontains=query)
+            | Q(phone__icontains=query)
+            | Q(email__icontains=query)
+            | Q(tags__icontains=query)
+            | Q(notes__icontains=query)
+        )
+        results["customers"] = Customer.objects.filter(customer_filter).order_by("-created_at")[:50]
+
+        courier_filter = (
+            Q(name__icontains=query)
+            | Q(phone__icontains=query)
+            | Q(telegram_username__icontains=query)
+        )
+        results["couriers"] = Courier.objects.filter(courier_filter).order_by("-created_at")[:50]
+
+        book_filter = (
+            Q(title__icontains=query)
+            | Q(author__name__icontains=query)
+            | Q(category__name__icontains=query)
+            | Q(barcode__icontains=query)
+        )
+        results["books"] = Book.objects.filter(book_filter).order_by("-created_at")[:50]
+
+        results["categories"] = Category.objects.filter(name__icontains=query).order_by("name")[:50]
+        results["authors"] = Author.objects.filter(name__icontains=query).order_by("name")[:50]
+
+        expense_filter = Q(title__icontains=query) | Q(note__icontains=query)
+        results["expenses"] = Expense.objects.filter(expense_filter).order_by("-spent_on")[:50]
+
+        debt_filter = Q(full_name__icontains=query) | Q(phone__icontains=query) | Q(note__icontains=query)
+        results["debts"] = Debt.objects.filter(debt_filter).order_by("-created_at")[:50]
+
+        inv_filter = Q(book__title__icontains=query) | Q(note__icontains=query)
+        results["inventory_logs"] = InventoryLog.objects.filter(inv_filter).order_by("-created_at")[:50]
+
+        notice_filter = Q(title__icontains=query) | Q(body__icontains=query)
+        results["delivery_notices"] = DeliveryNotice.objects.filter(notice_filter).order_by("-updated_at")[:50]
+
+        zone_filter = Q(name__icontains=query) | Q(message__icontains=query)
+        results["delivery_zones"] = DeliveryZone.objects.filter(zone_filter).order_by("name")[:50]
+
+        results["banners"] = Banner.objects.filter(title__icontains=query).order_by("-created_at")[:50]
+
+        about_filter = Q(title__icontains=query) | Q(body__icontains=query)
+        results["about_pages"] = AboutPage.objects.filter(about_filter).order_by("-updated_at")[:50]
+
+    return render(request, "crm/search.html", {"query": query, "results": results})
+
+
+@staff_member_required
+def prices_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
+    query = (request.GET.get("q") or "").strip()
+    books = Book.objects.all()
+    if query:
+        books = books.filter(
+            Q(title__icontains=query)
+            | Q(author__name__icontains=query)
+            | Q(barcode__icontains=query)
+        )
+    books = books.order_by("title")[:500]
+    return render(request, "crm/prices.html", {"books": books, "query": query})
+
+
+@staff_member_required
+def entry_list(request):
+    operator_response = _operator_block(request)
+    if operator_response:
+        return operator_response
+    if request.method == "POST":
+        action = (request.POST.get("action") or "update").strip()
+        if action == "update":
+            book_id = request.POST.get("book_id")
+            book = get_object_or_404(Book, id=book_id)
+            title = (request.POST.get("title") or "").strip()
+            purchase_raw = (request.POST.get("purchase_price") or "").strip()
+            sale_raw = (request.POST.get("sale_price") or "").strip()
+            barcode = (request.POST.get("barcode") or "").strip()
+
+            purchase_price = _parse_money(purchase_raw) if purchase_raw else None
+            sale_price = _parse_money(sale_raw) if sale_raw else None
+
+            update_fields = []
+            if title:
+                book.title = title
+                update_fields.append("title")
+            if purchase_price is not None:
+                book.purchase_price = purchase_price
+                update_fields.append("purchase_price")
+            if sale_price is not None:
+                book.sale_price = sale_price
+                update_fields.append("sale_price")
+
+            book.barcode = barcode
+            update_fields.append("barcode")
+
+            if update_fields:
+                book.save(update_fields=update_fields)
+        return redirect("crm_entry")
+
+    query = (request.GET.get("q") or "").strip()
+    books = Book.objects.all()
+    if query:
+        books = books.filter(
+            Q(title__icontains=query)
+            | Q(author__name__icontains=query)
+            | Q(barcode__icontains=query)
+        )
+    books = books.order_by("title")[:500]
+    return render(request, "crm/entry.html", {"books": books, "query": query})

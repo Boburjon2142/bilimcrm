@@ -9,6 +9,8 @@
   .expenses-header h4 { font-size:30px; font-weight:800; color:#1f2937; }
   .expenses-card { border-radius:18px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 12px 22px rgba(16,42,67,0.08); }
   .expenses-table th { font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; }
+  .expenses-form .form-control { border-radius:12px; }
+  .expenses-form button { border-radius:12px; }
   @media (max-width: 576px) {
     .expenses-header h4 { font-size:24px; }
   }
@@ -21,30 +23,47 @@
     <h4 class="mb-1">Chiqimlar</h4>
   </div>
 
-  <div class="expenses-card p-3">
-    <div class="table-responsive">
-      <table class="table expenses-table align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Sana</th>
-            <th>Sarlavha</th>
-            <th>Izoh</th>
-            <th class="text-end">Summa</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for expense in expenses %}
-          <tr>
-            <td>{{ expense.spent_on|date:"Y-m-d" }}</td>
-            <td>{{ expense.title }}</td>
-            <td>{{ expense.note|default:"-" }}</td>
-            <td class="text-end">{{ expense.amount|floatformat:0|intcomma }}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="text-muted">Chiqimlar yo'q</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="row g-3">
+    <div class="col-12 col-lg-4">
+      <div class="expenses-card p-3">
+        <div class="fw-semibold mb-2">Chiqim qo'shish</div>
+        <form method="post" class="d-grid gap-2 expenses-form">
+          {% csrf_token %}
+          <input class="form-control" type="text" name="title" placeholder="Sarlavha" required>
+          <input class="form-control" type="text" name="amount" inputmode="numeric" pattern="[0-9 ]+" data-money placeholder="Summa" required>
+          <input class="form-control" type="date" name="spent_on">
+          <textarea class="form-control" name="note" rows="2" placeholder="Izoh (ixtiyoriy)"></textarea>
+          <button class="btn btn-danger" type="submit">Chiqimni saqlash</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-12 col-lg-8">
+      <div class="expenses-card p-3">
+        <div class="table-responsive">
+          <table class="table expenses-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Sana</th>
+                <th>Sarlavha</th>
+                <th>Izoh</th>
+                <th class="text-end">Summa</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for expense in expenses %}
+              <tr>
+                <td>{{ expense.spent_on|date:"Y-m-d" }}</td>
+                <td>{{ expense.title }}</td>
+                <td>{{ expense.note|default:"-" }}</td>
+                <td class="text-end">{{ expense.amount|floatformat:0|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted">Chiqimlar yo'q</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>

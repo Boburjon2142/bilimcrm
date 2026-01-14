@@ -1,4 +1,5 @@
 {% extends "crm/base.html" %}
+{% load humanize crm_extras %}
 
 {% block title %}Kuryerlar{% endblock %}
 
@@ -20,7 +21,7 @@
           {% for courier in couriers %}
           <tr>
             <td>{{ courier.name }}</td>
-            <td>{{ courier.phone|default:"—" }}</td>
+            <td>{{ courier.phone|phone|default:"—" }}</td>
             <td>{{ courier.telegram_username|default:"—" }}</td>
             <td>{% if courier.is_active %}Ha{% else %}Yo'q{% endif %}</td>
           </tr>
@@ -45,7 +46,7 @@
           {% for courier in courier_stats %}
           <tr>
             <td>{{ courier.courier__name }}</td>
-            <td class="text-end">{{ courier.total }}</td>
+            <td class="text-end">{{ courier.total|intcomma }}</td>
           </tr>
           {% empty %}
           <tr><td colspan="2" class="text-muted">Ma'lumot yo'q</td></tr>

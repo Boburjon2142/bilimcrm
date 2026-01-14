@@ -4,6 +4,7 @@ venv/
 .python-version
 .ruff_cache/
 .mypy_cache/
+__pypackages__/
 
 # Env files / secrets
 .env
@@ -19,6 +20,9 @@ __pycache__/
 # Local DB
 *.sqlite3
 db.sqlite3
+
+# PythonAnywhere / deployment artifacts
+.pythonanywhere/
 
 # Django static/media output
 staticfiles/
@@ -36,6 +40,16 @@ pip-wheel-metadata/
 .coverage.*
 coverage.xml
 htmlcov/
+nosetests.xml
+junit.xml
+test-results.xml
+.pytest_cache/
+.tox/
+.nox/
+.cache/
+
+# Local Django settings overrides
+local_settings.py
 
 # IDE / OS junk
 .DS_Store

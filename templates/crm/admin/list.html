@@ -1,0 +1,47 @@
+{% extends "crm/base.html" %}
+{% load crm_extras %}
+
+{% block title %}{{ model._meta.verbose_name_plural|title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h4 class="mb-1">{{ model._meta.verbose_name_plural|title }}</h4>
+    <div class="text-muted small">{{ objects|length }} ta</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'crm_admin_index' %}">Admin</a>
+    <a class="btn btn-primary" href="{% url 'crm_admin_add' app_label model_name %}">Yangi qo'shish</a>
+  </div>
+</div>
+
+<div class="card crm-card p-3">
+  <table class="table crm-table align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        {% for field in fields %}
+        <th>{{ field.verbose_name|title }}</th>
+        {% endfor %}
+        <th>Amal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for obj in objects %}
+      <tr>
+        <td>#{{ obj.id }}</td>
+        {% for field in fields %}
+        <td>{{ obj|field_value:field }}</td>
+        {% endfor %}
+        <td class="text-nowrap">
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'crm_admin_edit' app_label model_name obj.id %}">Tahrirlash</a>
+          <a class="btn btn-sm btn-outline-danger" href="{% url 'crm_admin_delete' app_label model_name obj.id %}">O'chirish</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="{{ fields|length|add:'2' }}" class="text-muted">Ma'lumot yo'q</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

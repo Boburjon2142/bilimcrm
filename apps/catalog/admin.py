@@ -213,11 +213,13 @@ class BookAdmin(admin.ModelAdmin):
         "author",
         "purchase_price",
         "sale_price",
+        "barcode",
         "stock_quantity",
         "is_recommended",
         "views",
         "created_at",
     )
+    list_editable = ("purchase_price", "sale_price", "barcode")
     list_filter = ("category", "author", "is_recommended", "book_format")
     search_fields = ("title", "author__name", "barcode")
     prepopulated_fields = {"slug": ("title",)}

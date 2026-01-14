@@ -1,0 +1,109 @@
+{% extends "crm/base.html" %}
+{% load humanize %}
+
+{% block title %}Kiritish{% endblock %}
+
+{% block extra_css %}
+<style>
+  .entry-page { max-width:1100px; margin:0 auto; }
+  .entry-header h4 { font-size:30px; font-weight:800; color:#1f2937; }
+  .entry-card { border-radius:18px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 12px 22px rgba(16,42,67,0.08); }
+  .entry-table th { font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; }
+  .entry-input { min-width: 160px; }
+  .entry-price { min-width: 130px; }
+  @media (max-width: 576px) {
+    .entry-header h4 { font-size:24px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="entry-page">
+  <div class="entry-header mb-3">
+    <h4 class="mb-1">Kiritish</h4>
+  </div>
+
+  <div class="mb-3">
+    <form method="get" class="crm-search">
+      <i class="bi bi-search"></i>
+      <input type="search" name="q" placeholder="Mahsulot qidirish" value="{{ query|default:'' }}">
+    </form>
+  </div>
+
+  <div class="entry-card p-3">
+    <div class="table-responsive">
+      <table class="table entry-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Mahsulot</th>
+            <th class="text-end">Sotib olish</th>
+            <th class="text-end">Sotish</th>
+            <th class="text-end">Shtrix kod</th>
+            <th class="text-end">Amal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+          <form id="entry-form-{{ book.id }}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" name="book_id" value="{{ book.id }}">
+          </form>
+          <tr>
+            <td>
+              <input
+                form="entry-form-{{ book.id }}"
+                class="form-control form-control-sm entry-input"
+                type="text"
+                name="title"
+                value="{{ book.title }}"
+              >
+            </td>
+            <td class="text-end">
+              <input
+                form="entry-form-{{ book.id }}"
+                class="form-control form-control-sm text-end entry-price"
+                type="text"
+                name="purchase_price"
+                inputmode="numeric"
+                pattern="[0-9 ]+"
+                data-money
+                value="{{ book.purchase_price|floatformat:0|intcomma }}"
+              >
+            </td>
+            <td class="text-end">
+              <input
+                form="entry-form-{{ book.id }}"
+                class="form-control form-control-sm text-end entry-price"
+                type="text"
+                name="sale_price"
+                inputmode="numeric"
+                pattern="[0-9 ]+"
+                data-money
+                value="{{ book.sale_price|floatformat:0|intcomma }}"
+              >
+            </td>
+            <td class="text-end">
+              <input
+                form="entry-form-{{ book.id }}"
+                class="form-control form-control-sm text-end entry-price"
+                type="text"
+                name="barcode"
+                value="{{ book.barcode|default:'' }}"
+              >
+            </td>
+            <td class="text-end">
+              <button form="entry-form-{{ book.id }}" class="btn btn-sm btn-outline-primary" type="submit">
+                Saqlash
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted">Ma'lumot yo'q</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

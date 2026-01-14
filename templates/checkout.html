@@ -156,7 +156,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const zoom = 13;
 
     function formatSum(sum) {
-        return sum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        const value = Math.round(Number(sum) || 0);
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     }
 
     function fetchQuote() {

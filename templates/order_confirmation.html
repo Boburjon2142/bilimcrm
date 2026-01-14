@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% load humanize %}
+{% load humanize crm_extras %}
 {% block content %}
 <div class="text-center py-5">
     {% if order %}
     <h3 class="fw-bold">Rahmat! Buyurtmangiz qabul qilindi.</h3>
     <p class="lead">Buyurtma raqami: #{{ order.id }} | Umumiy: {{ order.total_price|floatformat:0|intcomma }} so‘m</p>
-    <p class="text-muted">Tez orada {{ order.phone }} raqami orqali bog‘lanamiz.</p>
+    <p class="text-muted">Tez orada {{ order.phone|phone }} raqami orqali bog‘lanamiz.</p>
     {% if order.latitude and order.longitude %}
     <div class="mt-3">
         <div><strong>Masofa:</strong> {{ order.delivery_distance_km }} km</div>
