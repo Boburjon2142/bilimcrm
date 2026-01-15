@@ -42,6 +42,26 @@
     .weekly-bar .value { font-size:9px; }
     .courier-chip { width:90px; }
     .courier-chip .avatar { width:64px; height:64px; }
+    .line-chart-card { padding: 16px; border-radius: 20px; }
+    .line-chart-title { font-size: 18px; }
+    .line-chart-canvas { height: 200px; }
+    .line-chart-y span { font-size: 10px; left: 6px; }
+    .chart-tooltip { display: none; }
+    .line-chart-x { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
+    .line-chart-x span { min-width: 52px; white-space: nowrap; scroll-snap-align: center; }
+    .line-chart-x::-webkit-scrollbar { height: 8px; }
+    .line-chart-x::-webkit-scrollbar-track { background: transparent; }
+    .line-chart-x::-webkit-scrollbar-thumb {
+      background-color: #e5e7eb;
+      border-radius: 999px;
+      border: 1px solid #cbd5f5;
+      box-shadow: inset 0 2px 3px rgba(255,255,255,0.9), inset 0 -2px 3px rgba(148,163,184,0.6);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='36' viewBox='0 0 120 36'><rect x='6' y='6' width='108' height='24' rx='12' fill='%23eef2f7'/><path d='M24 18h72' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'/><path d='M30 12l-6 6 6 6' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/><path d='M90 12l6 6-6 6' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 70px 20px;
+    }
+    .line-chart-x { scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
   }
 </style>
 {% endblock %}

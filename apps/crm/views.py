@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
+from functools import wraps
 from django.db.models import Count, Sum, F, Q, DecimalField, ExpressionWrapper
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,6 +13,18 @@ import calendar
 
 def _is_operator(user) -> bool:
     return user.is_authenticated and user.groups.filter(name="Operator").exists()
+
+
+def staff_member_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect("login")
+        if not request.user.is_staff:
+            return redirect("crm_pos")
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
 
 
 def _operator_only_redirect(request):
@@ -636,7 +649,7 @@ def inventory_list(request):
     return render(request, "crm/inventory.html", {"books": books})
 
 
-@staff_member_required
+@login_required
 def pos_checkout(request):
     cart = Cart(request)
     if request.method == "POST":

@@ -247,6 +247,9 @@
       .kpi-card .text-muted { font-size: 11px; }
       .crm-kpi { font-size: 18px; }
       .crm-actions { width: 100%; justify-content: flex-end; }
+      .crm-topbar { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 12px 14px; }
+      .crm-search { order: 0; width: 100%; min-width: 0; }
+      .crm-actions { display: none; }
     }
   </style>
   {% block extra_css %}{% endblock %}
@@ -259,6 +262,7 @@
         <span>Bilim uz</span>
       </div>
       <nav class="crm-menu">
+        {% if request.user.is_staff %}
         <a href="{% url 'crm_dashboard' %}"><i class="bi bi-grid"></i> Dashboard</a>
         <a href="{% url 'crm_orders' %}"><i class="bi bi-receipt"></i> Buyurtmalar</a>
         <a href="{% url 'crm_inventory' %}"><i class="bi bi-box"></i> Mahsulotlar</a>
@@ -266,11 +270,14 @@
         <a href="{% url 'crm_prices' %}"><i class="bi bi-tags"></i> Narxlar</a>
         <a href="{% url 'crm_expenses' %}"><i class="bi bi-cash-coin"></i> Chiqimlar</a>
         <a href="{% url 'crm_debts' %}"><i class="bi bi-wallet2"></i> Qarzdorlar</a>
+        {% endif %}
         <a href="{% url 'crm_pos' %}"><i class="bi bi-cash-coin"></i> POS</a>
       </nav>
+      {% if request.user.is_staff %}
       <div class="crm-sidebar-footer">
         <a class="crm-menu-link" href="{% url 'crm_entry' %}"><i class="bi bi-gear"></i> Kiritish</a>
       </div>
+      {% endif %}
     </aside>
 
     <div class="crm-main">
@@ -278,10 +285,12 @@
         <button class="crm-icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#crmSidebar" aria-controls="crmSidebar">
           <i class="bi bi-list"></i>
         </button>
+        {% if request.user.is_staff %}
         <form class="crm-search" action="{% url 'crm_search' %}" method="get">
           <i class="bi bi-search"></i>
           <input type="search" name="q" placeholder="Search" value="{{ request.GET.q|default:'' }}">
         </form>
+        {% endif %}
         <div class="crm-actions"></div>
       </header>
 
@@ -310,6 +319,7 @@
     </div>
     <div class="offcanvas-body">
       <nav class="crm-menu">
+        {% if request.user.is_staff %}
         <a href="{% url 'crm_dashboard' %}"><i class="bi bi-grid"></i> Dashboard</a>
         <a href="{% url 'crm_orders' %}"><i class="bi bi-receipt"></i> Buyurtmalar</a>
         <a href="{% url 'crm_inventory' %}"><i class="bi bi-box"></i> Mahsulotlar</a>
@@ -317,6 +327,7 @@
         <a href="{% url 'crm_prices' %}"><i class="bi bi-tags"></i> Narxlar</a>
         <a href="{% url 'crm_expenses' %}"><i class="bi bi-cash-coin"></i> Chiqimlar</a>
         <a href="{% url 'crm_debts' %}"><i class="bi bi-wallet2"></i> Qarzdorlar</a>
+        {% endif %}
         <a href="{% url 'crm_pos' %}"><i class="bi bi-cash-coin"></i> POS</a>
       </nav>
     </div>
