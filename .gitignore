@@ -9,6 +9,7 @@ __pypackages__/
 # Env files / secrets
 .env
 *.env
+!.env.example
 
 # Python caches / logs
 __pycache__/
@@ -16,9 +17,14 @@ __pycache__/
 *.pyo
 *.pyd
 *.log
+*.log.*
+django.log
 
 # Local DB
 *.sqlite3
+*.sqlite3-journal
+*.sqlite3-shm
+*.sqlite3-wal
 db.sqlite3
 
 # PythonAnywhere / deployment artifacts
@@ -43,6 +49,7 @@ htmlcov/
 nosetests.xml
 junit.xml
 test-results.xml
+.hypothesis/
 .pytest_cache/
 .tox/
 .nox/
@@ -57,6 +64,7 @@ Thumbs.db
 .idea/
 .vscode/
 .fleet/
+*.code-workspace
 *.swp
 *.swo
 *.orig

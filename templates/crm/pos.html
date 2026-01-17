@@ -19,6 +19,7 @@
     <div class="col-lg-4 col-md-4">
       <label class="form-label">Shtrix-kod</label>
       <input type="text" name="barcode" class="form-control" id="barcode-input" placeholder="Scan qiling yoki kiriting">
+      <div class="small text-danger mt-1 d-none" id="pos-scan-status"></div>
     </div>
     <div class="col-lg-4 col-md-4">
       <label class="form-label">Kitob (ixtiyoriy)</label>
@@ -46,62 +47,43 @@
   </form>
 </div>
 
-<div class="card crm-card p-3 mb-4">
-  <h6 class="fw-semibold">Savat</h6>
-  <table class="table crm-table align-middle">
-    <thead>
-      <tr>
-        <th>Kitob</th>
-        <th class="text-end">Soni</th>
-        <th class="text-end">Narx</th>
-        <th class="text-end">Jami</th>
-        <th class="text-end">O'chirish</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in cart_items %}
-      <tr>
-        <td>{{ item.book.title }}</td>
-        <td class="text-end">{{ item.quantity|intcomma }}</td>
-        <td class="text-end">{{ item.price|floatformat:0|intcomma }}</td>
-        <td class="text-end">{{ item.line_total|floatformat:0|intcomma }}</td>
-        <td class="text-end">
-          <form method="post" class="d-inline">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="remove">
-            <input type="hidden" name="book_id" value="{{ item.book.id }}">
-            <button class="btn btn-sm btn-outline-danger" type="submit">O'chirish</button>
-          </form>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="5" class="text-muted">Savat bo'sh</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <div class="text-end fw-semibold">Jami: {{ cart_total|floatformat:0|intcomma }} so'm</div>
+<div id="pos-cart-section">
+  {% include "crm/pos_cart.html" %}
 </div>
 
 <div class="card crm-card p-3">
-  <form method="post" class="row g-2 align-items-end">
+  <form method="post" class="row g-2 align-items-end" id="pos-checkout-form">
     {% csrf_token %}
     <input type="hidden" name="action" value="checkout">
-    <div class="col-md-4">
+    <div class="col-lg-3 col-md-3">
       <label class="form-label">Mijoz ismi</label>
       <input type="text" name="full_name" class="form-control" placeholder="POS mijoz">
     </div>
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-3">
       <label class="form-label">Telefon</label>
       <input type="text" name="phone" class="form-control" placeholder="+998 90 123 45 67">
     </div>
-    <div class="col-md-3">
-      <label class="form-label">To‘lov turi</label>
+    <div class="col-lg-2 col-md-2">
+      <label class="form-label">To'lov turi</label>
       <select name="payment_type" class="form-select">
         <option value="cash">Naqd</option>
         <option value="bank">Karta</option>
       </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-lg-2 col-md-2">
+      <label class="form-label">Chegirma</label>
+      <input
+        type="text"
+        name="discount_amount"
+        class="form-control"
+        placeholder="Maks: 0 so'm"
+        data-money
+        inputmode="numeric"
+        pattern="[0-9 ]+"
+        id="discount-input"
+      >
+    </div>
+    <div class="col-lg-2 col-md-2">
       <button class="btn btn-success w-100" type="submit">To'lov</button>
     </div>
   </form>
@@ -116,14 +98,61 @@
     const qtyInput = document.getElementById("qty-input");
     const minusBtn = document.getElementById("qty-minus");
     const plusBtn = document.getElementById("qty-plus");
+    const cartSection = document.getElementById("pos-cart-section");
+    const statusEl = document.getElementById("pos-scan-status");
     if (!input || !form) return;
     let submitting = false;
     const BARCODE_LEN = 13;
 
+    function showStatus(message) {
+      if (!statusEl) return;
+      if (!message) {
+        statusEl.textContent = "";
+        statusEl.classList.add("d-none");
+        return;
+      }
+      statusEl.textContent = message;
+      statusEl.classList.remove("d-none");
+    }
+
+    function resetAfterScan() {
+      input.value = "";
+      if (qtyInput) {
+        qtyInput.value = "1";
+      }
+      input.focus();
+      input.select();
+    }
+
     function submitBarcode() {
       if (submitting) return;
+      if (!input.value) return;
       submitting = true;
-      form.submit();
+      showStatus("");
+      const formData = new FormData(form);
+      formData.set("action", "add");
+      fetch(form.action || window.location.href, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      })
+        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        .then((payload) => {
+          if (!payload.ok || !payload.data.ok) {
+            showStatus(payload.data && payload.data.error ? payload.data.error : "Xatolik yuz berdi.");
+            return;
+          }
+          if (cartSection && payload.data.cart_html) {
+            cartSection.innerHTML = payload.data.cart_html;
+          }
+          resetAfterScan();
+        })
+        .catch(() => {
+          showStatus("Tarmoq xatosi.");
+        })
+        .finally(() => {
+          submitting = false;
+        });
     }
 
     input.focus();
@@ -163,6 +192,65 @@
       });
       qtyInput.addEventListener("blur", function() {
         qtyInput.value = clampQty(qtyInput.value);
+      });
+    }
+
+    document.addEventListener("submit", function(e) {
+      const target = e.target;
+      if (!target || !target.classList || !target.classList.contains("pos-remove-form")) {
+        return;
+      }
+      e.preventDefault();
+      if (submitting) return;
+      submitting = true;
+      showStatus("");
+      const formData = new FormData(target);
+      fetch(target.action || window.location.href, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      })
+        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        .then((payload) => {
+          if (!payload.ok || !payload.data.ok) {
+            showStatus(payload.data && payload.data.error ? payload.data.error : "Xatolik yuz berdi.");
+            return;
+          }
+          if (cartSection && payload.data.cart_html) {
+            cartSection.innerHTML = payload.data.cart_html;
+          }
+          input.focus();
+        })
+        .catch(() => {
+          showStatus("Tarmoq xatosi.");
+        })
+        .finally(() => {
+          submitting = false;
+        });
+    });
+
+    const checkoutForm = document.getElementById("pos-checkout-form");
+    const discountInput = document.getElementById("discount-input");
+    const discountHelp = document.getElementById("discount-help");
+    if (checkoutForm && discountInput) {
+      const subtotalRaw = "{{ cart_total|floatformat:0|default:'0' }}";
+      const subtotal = parseFloat(subtotalRaw.replace(/[^\d]/g, "")) || 0;
+      const maxDiscount = Math.floor(subtotal * 0.07);
+      discountInput.placeholder = "Maks: " + maxDiscount.toLocaleString("en-US").replace(/,/g, " ") + " so'm";
+
+      function clampDiscount() {
+        const raw = discountInput.value.replace(/[^\d]/g, "");
+        let value = parseInt(raw || "0", 10);
+        if (Number.isNaN(value)) value = 0;
+        if (value > maxDiscount) {
+          value = maxDiscount;
+        }
+        discountInput.value = value.toLocaleString("en-US").replace(/,/g, " ");
+      }
+
+      discountInput.addEventListener("blur", clampDiscount);
+      checkoutForm.addEventListener("submit", function () {
+        clampDiscount();
       });
     }
   })();

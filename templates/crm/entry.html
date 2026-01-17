@@ -31,6 +31,58 @@
   </div>
 
   <div class="entry-card p-3">
+    <form method="post" class="row g-2 align-items-end mb-3">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="col-lg-4 col-md-4">
+        <label class="form-label mb-1">Yangi mahsulot</label>
+        <input
+          class="form-control form-control-sm entry-input"
+          type="text"
+          name="title"
+          placeholder="Mahsulot nomi"
+          required
+        >
+      </div>
+      <div class="col-lg-2 col-md-2">
+        <label class="form-label mb-1">Sotib olish</label>
+        <input
+          class="form-control form-control-sm text-end entry-price"
+          type="text"
+          name="purchase_price"
+          inputmode="numeric"
+          pattern="[0-9 ]+"
+          data-money
+          placeholder="0"
+          required
+        >
+      </div>
+      <div class="col-lg-2 col-md-2">
+        <label class="form-label mb-1">Sotish</label>
+        <input
+          class="form-control form-control-sm text-end entry-price"
+          type="text"
+          name="sale_price"
+          inputmode="numeric"
+          pattern="[0-9 ]+"
+          data-money
+          placeholder="0"
+          required
+        >
+      </div>
+      <div class="col-lg-3 col-md-3">
+        <label class="form-label mb-1">Shtrix kod</label>
+        <input
+          class="form-control form-control-sm text-end entry-price"
+          type="text"
+          name="barcode"
+          placeholder="ixtiyoriy"
+        >
+      </div>
+      <div class="col-lg-1 col-md-1 d-flex align-items-end">
+        <button class="btn btn-sm btn-outline-primary w-100" type="submit">Qo'shish</button>
+      </div>
+    </form>
     <div class="table-responsive">
       <table class="table entry-table align-middle mb-0">
         <thead>

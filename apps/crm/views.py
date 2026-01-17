@@ -4,9 +4,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.db.models import Count, Sum, F, Q, DecimalField, ExpressionWrapper
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.text import slugify
 from datetime import timedelta, date, time, datetime
 import calendar
 
@@ -68,8 +70,12 @@ def dashboard(request):
     orders_today = Order.objects.filter(created_at__date=today)
     revenue_today = orders_today.aggregate(total=Sum("total_price")).get("total") or Decimal("0")
 
-    total_orders = Order.objects.count()
-    total_revenue = Order.objects.aggregate(total=Sum("total_price")).get("total") or Decimal("0")
+    now = timezone.now()
+    week_start = today - timedelta(days=6)
+    week_start_dt = timezone.make_aware(datetime.combine(week_start, time.min), timezone.get_current_timezone())
+    week_orders = Order.objects.filter(created_at__gte=week_start_dt, created_at__lte=now)
+    weekly_orders = week_orders.count()
+    weekly_revenue = week_orders.aggregate(total=Sum("total_price")).get("total") or Decimal("0")
 
     line_total_expr = ExpressionWrapper(
         F("quantity") * F("price"),
@@ -101,8 +107,8 @@ def dashboard(request):
         hourly_income.append({"label": f"{hour:02d}:00", "total": total})
 
     hourly_data = []
-    bar_max = 70
-    bar_min = 4
+    bar_max = 140
+    bar_min = 8
 
     def _height(total: Decimal) -> int:
         if max_total <= 0:
@@ -159,8 +165,8 @@ def dashboard(request):
     context = {
         "orders_today": orders_today.count(),
         "revenue_today": revenue_today,
-        "total_orders": total_orders,
-        "total_revenue": total_revenue,
+        "weekly_orders": weekly_orders,
+        "weekly_revenue": weekly_revenue,
         "top_books": top_books,
         "hourly_data": hourly_data,
         "chart_points": " ".join(points),
@@ -652,6 +658,17 @@ def inventory_list(request):
 @login_required
 def pos_checkout(request):
     cart = Cart(request)
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+    def _cart_payload():
+        cart_items = list(cart.items())
+        cart_html = render_to_string(
+            "crm/pos_cart.html",
+            {"cart_items": cart_items, "cart_total": cart.total_price()},
+            request=request,
+        )
+        return JsonResponse({"ok": True, "cart_html": cart_html})
+
     if request.method == "POST":
         book_id = request.POST.get("book_id")
         barcode = (request.POST.get("barcode") or "").strip()
@@ -659,37 +676,57 @@ def pos_checkout(request):
         action = request.POST.get("action")
         if action == "add" and book_id:
             cart.add(book_id, quantity)
+            if is_ajax:
+                return _cart_payload()
             return redirect("crm_pos")
         if action == "add" and barcode and not book_id:
-            book = Book.objects.filter(barcode=barcode).first()
+            book = Book.objects.only("id").filter(barcode=barcode).first()
             if not book:
-                messages.warning(request, "Shtrix-kod topilmadi.")
+                message = "Shtrix-kod topilmadi."
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": message}, status=404)
+                messages.warning(request, message)
                 return redirect("crm_pos")
             cart.add(book.id, quantity)
+            if is_ajax:
+                return _cart_payload()
             return redirect("crm_pos")
 
         if action == "remove" and book_id:
             cart.remove(book_id)
+            if is_ajax:
+                return _cart_payload()
             return redirect("crm_pos")
 
         if action == "clear":
             cart.clear()
+            if is_ajax:
+                return _cart_payload()
             return redirect("crm_pos")
 
         if action == "checkout":
             full_name = request.POST.get("full_name", "POS mijoz")
             phone = request.POST.get("phone", "")
             payment_type = request.POST.get("payment_type", "cash")
+            discount_raw = (request.POST.get("discount_amount") or "").strip()
             cart_items = list(cart.items())
             if cart_items:
                 subtotal = cart.total_price()
                 customer = None
                 discount_percent = 0
+                discount_amount = Decimal("0")
                 if phone:
                     customer = Customer.objects.filter(phone=phone).first()
                     if customer:
                         discount_percent = min(int(customer.discount_percent or 0), 100)
-                discount_amount = (subtotal * Decimal(discount_percent)) / Decimal("100") if discount_percent else 0
+                if discount_raw:
+                    parsed_discount = _parse_money(discount_raw)
+                    if parsed_discount is not None and parsed_discount > 0:
+                        max_discount = (subtotal * Decimal("0.07")).quantize(Decimal("0.01"))
+                        discount_amount = min(parsed_discount, max_discount)
+                        discount_percent = int((discount_amount * Decimal("100")) / subtotal) if subtotal > 0 else 0
+                if not discount_amount and discount_percent:
+                    discount_amount = (subtotal * Decimal(discount_percent)) / Decimal("100")
                 total_price = subtotal - discount_amount
                 order = Order.objects.create(
                     full_name=full_name,
@@ -876,6 +913,41 @@ def entry_list(request):
         return operator_response
     if request.method == "POST":
         action = (request.POST.get("action") or "update").strip()
+        if action == "create":
+            title = (request.POST.get("title") or "").strip()
+            purchase_raw = (request.POST.get("purchase_price") or "").strip()
+            sale_raw = (request.POST.get("sale_price") or "").strip()
+            barcode = (request.POST.get("barcode") or "").strip()
+
+            purchase_price = _parse_money(purchase_raw) if purchase_raw else None
+            sale_price = _parse_money(sale_raw) if sale_raw else None
+
+            if title and purchase_price is not None and sale_price is not None:
+                category = Category.objects.first()
+                if not category:
+                    category = Category.objects.create(name="Umumiy", slug="umumiy")
+
+                author = Author.objects.first()
+                if not author:
+                    author = Author.objects.create(name="Noma'lum")
+
+                base_slug = slugify(title) or "book"
+                slug = base_slug
+                suffix = 1
+                while Book.objects.filter(slug=slug).exists():
+                    suffix += 1
+                    slug = f"{base_slug}-{suffix}"
+
+                Book.objects.create(
+                    title=title,
+                    slug=slug,
+                    category=category,
+                    author=author,
+                    purchase_price=purchase_price,
+                    sale_price=sale_price,
+                    barcode=barcode or None,
+                )
+            return redirect("crm_entry")
         if action == "update":
             book_id = request.POST.get("book_id")
             book = get_object_or_404(Book, id=book_id)

@@ -1,0 +1,36 @@
+{% load humanize %}
+<div class="card crm-card p-3 mb-4" id="pos-cart-card">
+  <h6 class="fw-semibold">Savat</h6>
+  <table class="table crm-table align-middle">
+    <thead>
+      <tr>
+        <th>Kitob</th>
+        <th class="text-end">Soni</th>
+        <th class="text-end">Narx</th>
+        <th class="text-end">Jami</th>
+        <th class="text-end">O'chirish</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in cart_items %}
+      <tr>
+        <td>{{ item.book.title }}</td>
+        <td class="text-end">{{ item.quantity|intcomma }}</td>
+        <td class="text-end">{{ item.price|floatformat:0|intcomma }}</td>
+        <td class="text-end">{{ item.line_total|floatformat:0|intcomma }}</td>
+        <td class="text-end">
+          <form method="post" class="d-inline pos-remove-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove">
+            <input type="hidden" name="book_id" value="{{ item.book.id }}">
+            <button class="btn btn-sm btn-outline-danger" type="submit">O'chirish</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-muted">Savat bo'sh</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="text-end fw-semibold">Jami: {{ cart_total|floatformat:0|intcomma }} so'm</div>
+</div>

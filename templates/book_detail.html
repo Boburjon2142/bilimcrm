@@ -1,108 +1,41 @@
 {% extends "base.html" %}
 {% load humanize %}
 {% block content %}
-<div class="px-3 py-3">
-    <style>
-        /* Override generic .book-card img height on detail page */
-        .book-hero-img { height: auto !important; max-height: 520px; object-fit: cover; border-radius: 16px; }
-        @media (min-width: 992px) { .book-hero-img { max-height: 720px; } }
-        .btn-add-cart { min-width: 170px; height: 44px; font-weight: 600; }
-        @media (max-width: 576px){
-            .btn-add-cart { font-size:14px; padding:10px 12px; min-width:120px; height:40px; }
-        }
-    </style>
-    <div class="card book-card border-0">
-        {% if book.cover_image %}
-        <img src="{{ book.cover_image.url }}" class="w-100 book-hero-img" alt="{{ book.title }}">
-        {% else %}
-        <img src="https://via.placeholder.com/600x700?text=Rasm+yo%27q" class="w-100 book-hero-img" alt="{{ book.title }}">
-        {% endif %}
-        <div class="p-3">
-            <h4 class="fw-bold mb-1">{{ book.title }}</h4>
-            <div class="text-muted mb-2">{{ book.author.name }}</div>
-            {% if book.book_format %}<div class="mb-1 small text-muted">Format: {{ book.get_book_format_display }}</div>{% endif %}
-            {% if book.pages %}<div class="mb-1 small text-muted">Sahifa: {{ book.pages }}</div>{% endif %}
-            <div class="d-flex align-items-center gap-2 mt-2">
-                <div class="fw-bold fs-4 text-primary">{{ book.sale_price|floatformat:0|intcomma }} so‘m</div>
-            </div>
-            {% if book.description %}
-            <p class="mt-2 mb-3">{{ book.description }}</p>
-            {% endif %}
-            <form method="post" action="{% url 'add_to_cart' book.id %}" class="d-flex align-items-center gap-3 flex-wrap">
-                {% csrf_token %}
-                <div class="d-flex align-items-center gap-2">
-                    <button class="qty-btn" type="button" onclick="changeQty(-1)">-</button>
-                    <input type="number" id="qty" name="quantity" class="form-control text-center qty-input" value="1" min="1">
-                    <button class="qty-btn" type="button" onclick="changeQty(1)">+</button>
-                </div>
-                <button class="btn btn-primary btn-add-cart" type="submit">Savatchaga qo‘shish</button>
-            </form>
-            <div class="mt-3">
-                <form
-                  class="js-fav-toggle"
-                  data-add-url="{% url 'add_favorite' book.id %}"
-                  data-remove-url="{% url 'remove_favorite' book.id %}"
-                  data-state="{% if in_favorites %}active{% else %}inactive{% endif %}"
-                >
-                    {% csrf_token %}
-                    <button class="btn btn-sm {% if in_favorites %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" type="submit">
-                        {% if in_favorites %}Sevimlidan olib tashlash{% else %}Sevimlilarga qo‘shish{% endif %}
-                    </button>
-                </form>
-            </div>
-        </div>
+<div class="grid gap-6 lg:grid-cols-2">
+  <div class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+    {% if book.cover_image %}
+    <img src="{{ book.cover_image.url }}" alt="{{ book.title }}" width="640" height="960" class="aspect-[2/3] w-full object-cover">
+    {% else %}
+    <img src="https://via.placeholder.com/640x960?text=Rasm+yo%27q" alt="{{ book.title }}" width="640" height="960" class="aspect-[2/3] w-full object-cover">
+    {% endif %}
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{{ book.title }}</h1>
+      <p class="mt-1 text-sm text-slate-500">{{ book.author.name }}</p>
     </div>
+    <div class="flex flex-wrap gap-3 text-xs text-slate-500">
+      {% if book.book_format %}<span>Format: {{ book.get_book_format_display }}</span>{% endif %}
+      {% if book.pages %}<span>Sahifa: {{ book.pages }}</span>{% endif %}
+    </div>
+    <div class="text-2xl font-bold text-blue-600">{{ book.sale_price|floatformat:0|intcomma }} so'm</div>
+    {% if book.description %}
+    <p class="text-sm leading-6 text-slate-600">{{ book.description }}</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'add_to_cart' book.id %}" class="flex flex-wrap items-center gap-3">
+      {% csrf_token %}
+      <input type="number" name="quantity" value="1" min="1" class="w-24 rounded-md border border-slate-200 px-3 py-2 text-center text-sm">
+      <button class="rounded-full bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700" type="submit">Savatga qo'shish</button>
+    </form>
+
+    <form method="post" action="{% if in_favorites %}{% url 'remove_favorite' book.id %}{% else %}{% url 'add_favorite' book.id %}{% endif %}">
+      {% csrf_token %}
+      <button class="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-slate-600 hover:border-blue-200 hover:text-blue-600" type="submit">
+        {% if in_favorites %}Sevimlidan olib tashlash{% else %}Sevimlilarga qo'shish{% endif %}
+      </button>
+    </form>
+  </div>
 </div>
-<script>
-function changeQty(delta) {
-    const input = document.getElementById('qty');
-    let val = parseInt(input.value || '1', 10) + delta;
-    if (val < 1) val = 1;
-    input.value = val;
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    // AJAXify favorites to avoid page reload
-    function getCsrf() {
-        const name = "csrftoken";
-        const cookies = document.cookie ? document.cookie.split(';') : [];
-        for (let c of cookies) {
-            const cookie = c.trim();
-            if (cookie.startsWith(name + "=")) {
-                return decodeURIComponent(cookie.substring(name.length + 1));
-            }
-        }
-        return "";
-    }
-
-    document.querySelectorAll(".js-fav-toggle").forEach(form => {
-        form.addEventListener("submit", function(e) {
-            e.preventDefault();
-            const isActive = form.dataset.state === "active";
-            const url = isActive ? form.dataset.removeUrl : form.dataset.addUrl;
-            const btn = form.querySelector("button");
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRFToken": getCsrf(),
-                },
-                body: new FormData(form),
-            }).then(() => {
-                if (isActive) {
-                    form.dataset.state = "inactive";
-                    btn.classList.remove("btn-outline-danger");
-                    btn.classList.add("btn-outline-secondary");
-                    btn.textContent = "Sevimlilarga qo‘shish";
-                } else {
-                    form.dataset.state = "active";
-                    btn.classList.remove("btn-outline-secondary");
-                    btn.classList.add("btn-outline-danger");
-                    btn.textContent = "Sevimlidan olib tashlash";
-                }
-            }).catch(() => form.submit());
-        });
-    });
-});
-</script>
 {% endblock %}

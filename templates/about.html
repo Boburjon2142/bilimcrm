@@ -1,27 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-shell py-4">
-    <h5 class="fw-bold mb-3">{{ about_page.title|default:"Biz haqimizda" }}</h5>
-    <div class="row g-4 align-items-center">
-        {% if about_page and about_page.image %}
-            <div class="col-12 col-md-5">
-                {% if about_page.link %}
-                    <a href="{{ about_page.link }}" target="_blank" rel="noopener" class="d-block">
-                        <img src="{{ about_page.image.url }}" alt="{{ about_page.title }}" class="img-fluid rounded shadow-sm">
-                    </a>
-                {% else %}
-                    <img src="{{ about_page.image.url }}" alt="{{ about_page.title }}" class="img-fluid rounded shadow-sm">
-                {% endif %}
-            </div>
-        {% endif %}
-        <div class="col">
-            <p class="text-muted mb-3" style="white-space: pre-line;">
-                {{ about_page.body|default:"BILIM UZ kitob do‘koni — o‘quvchilar uchun qulay va tezkor platforma." }}
-            </p>
-            {% if about_page and about_page.link %}
-                <a class="btn btn-primary btn-sm" href="{{ about_page.link }}" target="_blank" rel="noopener">Batafsil</a>
-            {% endif %}
-        </div>
-    </div>
+<div class="grid gap-6 md:grid-cols-2 md:items-center">
+  {% if about_page and about_page.image %}
+  <div class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+    {% if about_page.link %}
+    <a href="{{ about_page.link }}" target="_blank" rel="noopener">
+      <img src="{{ about_page.image.url }}" alt="{{ about_page.title }}" loading="lazy" width="720" height="540" class="w-full object-cover">
+    </a>
+    {% else %}
+    <img src="{{ about_page.image.url }}" alt="{{ about_page.title }}" loading="lazy" width="720" height="540" class="w-full object-cover">
+    {% endif %}
+  </div>
+  {% endif %}
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-900">{{ about_page.title|default:"Biz haqimizda" }}</h1>
+    <p class="mt-3 text-sm leading-6 text-slate-600 whitespace-pre-line">
+      {{ about_page.body|default:"BILIM UZ kitob do'koni — o'quvchilar uchun qulay va tezkor platforma." }}
+    </p>
+    {% if about_page and about_page.link %}
+    <a class="mt-4 inline-flex rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-600" href="{{ about_page.link }}" target="_blank" rel="noopener">Batafsil</a>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

@@ -41,6 +41,8 @@
         <th>Mijoz</th>
         <th>Telefon</th>
         <th>Summa</th>
+        <th>Chegirma</th>
+        <th>Vaqt</th>
         <th>Kanal</th>
       </tr>
     </thead>
@@ -51,10 +53,18 @@
         <td data-label="Mijoz">{{ order.full_name }}</td>
         <td data-label="Telefon">{{ order.phone|phone }}</td>
         <td data-label="Summa">{{ order.total_price|floatformat:0|intcomma }}</td>
+        <td data-label="Chegirma">
+          {% if order.discount_amount %}
+          {{ order.discount_amount|floatformat:0|intcomma }} so'm ({{ order.discount_percent }}%)
+          {% else %}
+          -
+          {% endif %}
+        </td>
+        <td data-label="Vaqt">{{ order.created_at|date:"Y-m-d H:i" }}</td>
         <td data-label="Kanal">{{ order.get_order_source_display }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" class="text-muted">Buyurtmalar yo'q</td></tr>
+      <tr><td colspan="7" class="text-muted">Buyurtmalar yo'q</td></tr>
       {% endfor %}
     </tbody>
   </table>

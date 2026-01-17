@@ -1,0 +1,26 @@
+{% extends "offline/base.html" %}
+{% block title %}Offline Expenses{% endblock %}
+{% block page %}expenses{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between">
+  <h1 class="text-lg font-semibold">Chiqimlar</h1>
+  <span class="text-xs text-slate-500" id="offline-status">Offline</span>
+</div>
+
+<form class="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-4" id="expense-form">
+  <input type="text" name="category" placeholder="Kategoriya" class="rounded-md border border-slate-200 px-3 py-2 text-sm" required>
+  <input type="number" name="amount" placeholder="Summa" class="rounded-md border border-slate-200 px-3 py-2 text-sm" step="0.01" required>
+  <input type="text" name="note" placeholder="Izoh" class="rounded-md border border-slate-200 px-3 py-2 text-sm sm:col-span-2">
+  <button class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white sm:col-span-4" type="submit">Chiqim qo'shish</button>
+</form>
+
+<div class="mt-6 rounded-lg border border-slate-200 bg-white">
+  <div class="grid grid-cols-4 gap-2 border-b border-slate-100 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+    <div>Vaqt</div>
+    <div>Kategoriya</div>
+    <div>Summa</div>
+    <div>Izoh</div>
+  </div>
+  <div id="expense-list" class="divide-y divide-slate-100 text-sm"></div>
+</div>
+{% endblock %}

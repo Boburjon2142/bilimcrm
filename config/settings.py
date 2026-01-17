@@ -1,5 +1,6 @@
 import os
 import socket
+from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -32,15 +33,18 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     "rest_framework",
+    "rest_framework.authtoken",
     "drf_spectacular",
     "apps.catalog.apps.CatalogConfig",
     "apps.orders.apps.OrdersConfig",
     "apps.crm.apps.CrmConfig",
     "apps.api.apps.ApiConfig",
+    "apps.sync.apps.SyncConfig",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -57,8 +61,21 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
+        "APP_DIRS": DEBUG,
         "OPTIONS": {
+            "loaders": (
+                [
+                    (
+                        "django.template.loaders.cached.Loader",
+                        [
+                            "django.template.loaders.filesystem.Loader",
+                            "django.template.loaders.app_directories.Loader",
+                        ],
+                    )
+                ]
+                if not DEBUG
+                else None
+            ),
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
@@ -87,6 +104,7 @@ if DATABASE_URL:
             "PASSWORD": parsed.password or "",
             "HOST": parsed.hostname or "localhost",
             "PORT": parsed.port or "5432",
+            "CONN_MAX_AGE": int(os.getenv("DJANGO_CONN_MAX_AGE", "60")),
         }
     }
 else:
@@ -94,6 +112,7 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+            "CONN_MAX_AGE": int(os.getenv("DJANGO_CONN_MAX_AGE", "0")),
         }
     }
 
@@ -117,6 +136,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # Use non-manifest storage to avoid bootstrap errors before collectstatic.
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+WHITENOISE_MAX_AGE = 0 if DEBUG else 31536000
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -216,6 +236,19 @@ LOGOUT_REDIRECT_URL = "login"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAdminUser",
+    ],
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
 SPECTACULAR_SETTINGS = {

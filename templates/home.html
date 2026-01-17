@@ -1,177 +1,130 @@
 {% extends "base.html" %}
-{% load humanize cache %}
+{% load cache %}
+
 {% block content %}
-<div class="px-1 px-md-2 py-3">
-    <div class="hero-card mb-4">
-        <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
-            <div class="carousel-inner">
-                {% if banners %}
-                    {% for banner in banners %}
-                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                        {% if banner.link %}
-                        <a href="{{ banner.link }}" target="_blank">
-                            {% if banner.image %}<img class="hero-img" src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}">{% else %}<img class="hero-img" src="https://via.placeholder.com/1100x420/0f172a/ffffff?text=Banner" alt="{{ banner.title|default:'Banner' }}">{% endif %}
-                        </a>
-                        {% else %}
-                        {% if banner.image %}<img class="hero-img" src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}">{% else %}<img class="hero-img" src="https://via.placeholder.com/1100x420/0f172a/ffffff?text=Banner" alt="{{ banner.title|default:'Banner' }}">{% endif %}
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="carousel-item active">
-                        <img class="hero-img" src="https://via.placeholder.com/1100x420/0f172a/ffffff?text=Banner" alt="Banner">
-                    </div>
-                {% endif %}
-            </div>
-            <div class="carousel-indicators" style="bottom: 14px;">
-                {% if banners %}
-                    {% for banner in banners %}
-                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" {% if forloop.first %}aria-current="true"{% endif %}></button>
-                    {% endfor %}
-                {% else %}
-                    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
-                {% endif %}
-            </div>
-        </div>
+<section class="grid gap-6 md:grid-cols-2">
+  <div class="flex flex-col justify-center gap-4">
+    <div class="text-xs font-semibold uppercase tracking-widest text-blue-600">Bilimstore</div>
+    <h1 class="text-3xl font-semibold text-slate-900 md:text-4xl">Yaxshi kitoblar. Aniq narxlar. Tez buyurtma.</h1>
+    <p class="text-sm text-slate-600">Minimal, tez va qulay tajriba. Eng kerakli kitoblarni toping va savatga qo'shing.</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <a href="{% url 'search' %}" class="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Qidirish</a>
+      <a href="{% url 'categories_list' %}" class="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-600">Kategoriyalar</a>
     </div>
-    <div class="hero-divider"></div>
-
-    {% cache 3600 home_categories_grid %}
-    <div class="categories-card">
-        <div class="section-head">
-            <h5 class="section-title mb-0">Kategoriya</h5>
-            <a class="section-link" href="{% url 'categories_list' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-        </div>
-        <div class="strip fade-edges mb-1 categories-grid">
-            {% for category in categories|slice:":4" %}
-                {% cycle "#f8b04e" "#4d8aff" "#f57ba3" "#45bdf5" as cat_color silent %}
-                <a href="{% url 'category_detail' category.slug %}" class="text-decoration-none">
-                    <div class="pill-cat" style="background: {{ cat_color }};">{{ category.name }}</div>
-                </a>
-            {% empty %}
-            <p class="mb-0 ps-1">Kategoriyalar hali qo‘shilmagan.</p>
-            {% endfor %}
-        </div>
-    </div>
-    {% endcache %}
-
-    {% if authors %}
-    {% cache 3600 home_featured_authors %}
-    <div class="authors-card">
-        <div class="section-head">
-            <h5 class="section-title mb-0">Mualliflar</h5>
-            <a class="section-link" href="{% url 'authors_list' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-        </div>
-        <div class="strip fade-edges mb-0">
-            {% for author in authors %}
-            <a class="author-chip text-decoration-none" href="{% url 'author_detail' author.id %}">
-                {% if author.photo %}
-                <img src="{{ author.photo.url }}" alt="{{ author.name }}">
-                {% else %}
-                <div class="rounded-circle d-flex align-items-center justify-content-center bg-light mx-auto" style="width:70px;height:70px;font-weight:700;color:#111;">
-                    {{ author.name|slice:":2" }}
-                </div>
-                {% endif %}
-                <span class="name">{{ author.name }}</span>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endcache %}
+  </div>
+  <div class="overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+    {% if banners %}
+      {% with banner=banners.0 %}
+        {% if banner.image %}
+        <img src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}" width="1200" height="720" class="h-full w-full object-cover">
+        {% else %}
+        <img src="https://via.placeholder.com/1200x720?text=Banner" alt="Banner" width="1200" height="720" class="h-full w-full object-cover">
+        {% endif %}
+      {% endwith %}
+    {% else %}
+    <img src="https://via.placeholder.com/1200x720?text=Banner" alt="Banner" width="1200" height="720" class="h-full w-full object-cover">
     {% endif %}
+  </div>
+</section>
 
-    {% if featured_sections %}
-    {% for section in featured_sections %}
-    <div class="section-head mt-2">
-        <h5 class="section-title mb-0">{{ section.title }}</h5>
-        <a class="section-link" href="{% url 'category_detail' section.category.slug %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-    </div>
-    <div class="strip fade-edges mb-4">
-        {% for book in section.books %}
-        <div class="book-strip-card">
-            {% if book.cover_image %}
-            <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
-            {% else %}
-            <img src="https://via.placeholder.com/420x240?text=Rasm+yo%27q" alt="{{ book.title }}">
-            {% endif %}
-            <div class="meta">
-                <p class="title">{{ book.title }}</p>
-                <p class="author">{{ book.author.name }}</p>
-                <a href="{{ book.get_absolute_url }}" class="stretched-link"></a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+{% cache 3600 home_categories_grid %}
+<section class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">Kategoriyalar</h2>
+    <a href="{% url 'categories_list' %}" class="text-sm font-semibold text-blue-600">Hammasi</a>
+  </div>
+  <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    {% for category in categories %}
+    <a href="{% url 'category_detail' category.slug %}" class="rounded-lg border border-slate-100 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-600">
+      {{ category.name }}
+    </a>
+    {% empty %}
+    <div class="text-sm text-slate-500">Kategoriyalar hali qo'shilmagan.</div>
     {% endfor %}
-    {% endif %}
+  </div>
+</section>
+{% endcache %}
 
-    {% if new_books %}
-    <div class="section-head mt-2">
-        <h5 class="section-title mb-0">Yangi qo‘shilganlar</h5>
-        <a class="section-link" href="{% url 'new_books_list' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-    </div>
-    <div class="strip fade-edges mb-4">
-        {% for book in new_books %}
-        <div class="book-strip-card">
-            {% if book.cover_image %}
-            <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
-            {% else %}
-            <img src="https://via.placeholder.com/420x240?text=Rasm+yo%27q" alt="{{ book.title }}">
-            {% endif %}
-            <div class="meta">
-                <p class="title">{{ book.title }}</p>
-                <p class="author">{{ book.author.name }}</p>
-                <a href="{{ book.get_absolute_url }}" class="stretched-link"></a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+{% if authors %}
+{% cache 3600 home_featured_authors %}
+<section class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">Mualliflar</h2>
+    <a href="{% url 'authors_list' %}" class="text-sm font-semibold text-blue-600">Hammasi</a>
+  </div>
+  <div class="mt-4 flex gap-4 overflow-x-auto pb-2">
+    {% for author in authors %}
+    <a href="{% url 'author_detail' author.id %}" class="flex min-w-[110px] flex-col items-center gap-2 text-center">
+      {% if author.photo %}
+      <img src="{{ author.photo.url }}" alt="{{ author.name }}" loading="lazy" width="96" height="96" class="h-20 w-20 rounded-full object-cover">
+      {% else %}
+      <div class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">
+        {{ author.name|slice:":2" }}
+      </div>
+      {% endif %}
+      <span class="text-xs font-semibold text-slate-700">{{ author.name }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endcache %}
+{% endif %}
 
-    {% if best_selling %}
-    <div class="section-head mt-2">
-        <h5 class="section-title mb-0">Eng ko‘p sotilganlar</h5>
-        <a class="section-link" href="{% url 'best_selling_list' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-    </div>
-    <div class="strip fade-edges mb-4">
-        {% for book in best_selling %}
-        <div class="book-strip-card">
-            {% if book.cover_image %}
-            <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
-            {% else %}
-            <img src="https://via.placeholder.com/420x240?text=Rasm+yo%27q" alt="{{ book.title }}">
-            {% endif %}
-            <div class="meta">
-                <p class="title">{{ book.title }}</p>
-                <p class="author">{{ book.author.name }}</p>
-                <a href="{{ book.get_absolute_url }}" class="stretched-link"></a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+{% if featured_sections %}
+{% for section in featured_sections %}
+<section class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">{{ section.title }}</h2>
+    <a href="{% url 'category_detail' section.category.slug %}" class="text-sm font-semibold text-blue-600">Hammasi</a>
+  </div>
+  <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    {% for book in section.books %}
+      {% include "partials/product_card.html" with book=book %}
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endif %}
 
-    {% if recommended %}
-    <div class="section-head mt-2">
-        <h5 class="section-title mb-0">Tavsiya etilganlar</h5>
-        <a class="section-link" href="{% url 'recommended_list' %}">Hammasi <i class="bi bi-chevron-right"></i></a>
-    </div>
-    <div class="strip fade-edges mb-2">
-        {% for book in recommended %}
-        <div class="book-strip-card">
-            {% if book.cover_image %}
-            <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
-            {% else %}
-            <img src="https://via.placeholder.com/420x240?text=Rasm+yo%27q" alt="{{ book.title }}">
-            {% endif %}
-            <div class="meta">
-                <p class="title">{{ book.title }}</p>
-                <p class="author">{{ book.author.name }}</p>
-                <a href="{{ book.get_absolute_url }}" class="stretched-link"></a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-</div>
+{% if new_books %}
+<section class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">Yangi qo'shilganlar</h2>
+    <a href="{% url 'new_books_list' %}" class="text-sm font-semibold text-blue-600">Hammasi</a>
+  </div>
+  <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    {% for book in new_books %}
+      {% include "partials/product_card.html" with book=book %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if best_selling %}
+<section class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">Eng ko'p sotilganlar</h2>
+    <a href="{% url 'best_selling_list' %}" class="text-sm font-semibold text-blue-600">Hammasi</a>
+  </div>
+  <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    {% for book in best_selling %}
+      {% include "partials/product_card.html" with book=book %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if recommended %}
+<section class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-slate-900">Tavsiya etilganlar</h2>
+    <a href="{% url 'recommended_list' %}" class="text-sm font-semibold text-blue-600">Hammasi</a>
+  </div>
+  <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    {% for book in recommended %}
+      {% include "partials/product_card.html" with book=book %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}
